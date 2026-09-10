@@ -1,0 +1,36 @@
+% Table I -- cohort and split characteristics.
+% All values from FACTS.md: F-COHORT-TOTAL, F-COHORT-TRAIN, F-COHORT-VAL,
+% F-COHORT-TEST, F-DIST-IMG-*, F-DIST-PAT-*, F-SPLIT-PATIENT-OVERLAP,
+% F-SPLIT-CENTER-SHARED.
+\begin{table}[!t]
+\centering
+\caption{Cohort and split characteristics of the study dataset. The split is
+performed at the patient level with zero patient overlap between training and
+test; all four centers represented in the test set also appear in the training
+split. Grade distributions are
+given at the image and patient level, where the patient grade is the maximum
+grade over that patient's images.}
+\label{tab:cohort}
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+ & Total & Train & Validation & Test \\
+\midrule
+Images   & 108,709 & 83,722 & 20,880 & 4,107 \\
+Patients &   6,373 &  4,906 &  1,227 &   240 \\
+Centers  &      35 &     35 &     33 &     4 \\
+\midrule
+\multicolumn{5}{@{}l}{\textit{Image-level grade distribution}} \\
+F0 & & 16,182 & 3,982 & 1,140 \\
+F1 & & 28,020 & 7,033 & 1,006 \\
+F2 & & 28,427 & 7,170 & 1,108 \\
+F3 & & 11,093 & 2,695 &   853 \\
+\midrule
+\multicolumn{5}{@{}l}{\textit{Patient-level grade distribution}} \\
+F0 & &   854 & 213 & 60 \\
+F1 & & 1,161 & 291 & 60 \\
+F2 & & 1,977 & 495 & 60 \\
+F3 & &   914 & 228 & 60 \\
+\bottomrule
+\end{tabular}
+\end{table}

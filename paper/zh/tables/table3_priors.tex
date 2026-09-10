@@ -1,0 +1,22 @@
+% 表 III —— 部位与病灶先验的 2x2 比较(数据与英文原稿完全一致)。
+\begin{table}[!t]
+\centering
+\caption{部位与病灶解剖先验的 $2\times2$ 比较,在患者级留出测试集上
+(seed 2026,单种子,验证集选定检查点)。三个指标均越低越好;每列最佳值
+加粗。}
+\label{tab:priors}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}ccc rrr@{}}
+\toprule
+ & \multicolumn{2}{c}{解剖先验} & \multicolumn{3}{c}{测试表现} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-6}
+配置 & 部位 & 病灶 & $R_{\mathrm{final}}\downarrow$ & 图像 COR~$\downarrow$ & Pmax COR~$\downarrow$ \\
+\midrule
+A & --           & --           & 0.187312 & 0.178900 & 0.200569 \\
+C & \checkmark   & --           & 0.200202 & 0.181910 & 0.213942 \\
+D & --           & \checkmark   & 0.196686 & 0.186336 & 0.211353 \\
+E & \checkmark   & \checkmark   & \textbf{0.186865} & \textbf{0.177908} & \textbf{0.200528} \\
+\bottomrule
+\end{tabular}
+\end{table}

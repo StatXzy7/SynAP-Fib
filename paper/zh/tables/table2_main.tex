@@ -1,0 +1,23 @@
+% 表 II —— 主分级表现,全部五个配置(数据与英文原稿完全一致)。
+\begin{table*}[!t]
+\centering
+\caption{患者级留出测试集上的分级表现(4,107 张图像,240 名患者,4 个中心;
+seed 2026,单种子)。所有数值均使用各配置验证集选定的检查点。配置 A 为
+SFibAI 基线,E 为 SynAP-Fib。$R_{\mathrm{final}}$、COR 与 MAE 越低越好;
+准确率各列越高越好。每列最佳值加粗。}
+\label{tab:main}
+\small
+\begin{tabular}{@{}clrrrrrrr@{}}
+\toprule
+ & & \multicolumn{5}{c}{图像级} & \multicolumn{2}{c}{患者最大值} \\
+\cmidrule(lr){3-7} \cmidrule(lr){8-9}
+臂 & 配置 & $R_{\mathrm{final}}\downarrow$ & COR~$\downarrow$ & MAE~$\downarrow$ & $\pm0.5$ 准确率~$\uparrow$ & 4 类准确率~$\uparrow$ & COR~$\downarrow$ & MAE~$\downarrow$ \\
+\midrule
+A & 拉伸基线(SFibAI) & 0.187312 & 0.178900 & 0.379086 & 69.81\% & 66.76\% & 0.200569 & 0.430000 \\
+B & 信箱式基线 & 0.198100 & 0.179921 & 0.382443 & 69.69\% & \textbf{67.40\%} & 0.216948 & 0.450034 \\
+C & 拉伸 + 部位先验 & 0.200202 & 0.181910 & 0.381920 & \textbf{70.17\%} & 65.89\% & 0.213942 & 0.438725 \\
+D & 拉伸 + 病灶先验 & 0.196686 & 0.186336 & 0.392331 & 68.86\% & 64.23\% & 0.211353 & 0.451029 \\
+E & SynAP-Fib & \textbf{0.186865} & \textbf{0.177908} & \textbf{0.377857} & 70.15\% & 67.03\% & \textbf{0.200528} & \textbf{0.420558} \\
+\bottomrule
+\end{tabular}
+\end{table*}

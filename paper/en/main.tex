@@ -1,0 +1,109 @@
+\documentclass[journal]{IEEEtran}
+
+\usepackage{amsmath,amssymb,amsfonts,mathtools}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{cite}
+
+\begin{document}
+
+\title{SynAP-Fib: Synergistic Anatomical Priors for Fine-Grained Ultrasound
+Liver Fibrosis Grading in Schistosomiasis}
+
+\author{Ziyang~Xu, \textit{et al.}}
+
+\maketitle
+
+\begin{abstract}
+Ultrasound grading of schistosomiasis-associated liver fibrosis is
+operator-dependent and anatomically structured: images are acquired under a
+standardized six-position protocol, and fibrotic change is annotated with
+coarse bounding boxes. We present SynAP-Fib, a fine-grained grading model that
+augments an ordinal grading backbone with two anatomical prior branches: a
+six-class position head and a weak-box lesion attention head. Each branch
+enters grading through a gated residual injection with a bidirectionally
+detached gradient boundary, so anatomical supervision shapes the branches
+while the grading pathway consumes only their predicted outputs, requiring no
+anatomical metadata at inference. On a multicenter cohort of 108,709
+region-of-interest images from 6,373 patients across 35 centers, a $2\times2$
+comparison on the patient-held-out test set showed that introducing either
+prior alone degraded the prespecified composite clinical risk, whereas the
+joint configuration retained baseline-level grading accuracy, produced the
+best observed composite risk of the four configurations, and emitted
+anatomical position and weak lesion localization outputs at a 5.9\% parameter
+and 2.8\% arithmetic overhead. The joint configuration and the baseline were
+not distinguishable on the primary endpoint under a paired bootstrap analysis,
+so the joint configuration is described as best observed rather than as an
+established improvement.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Liver fibrosis, ultrasound, ordinal grading, anatomical priors, auxiliary
+supervision, schistosomiasis.
+\end{IEEEkeywords}
+
+% Section 1 Introduction   -- pending
+% Section 2 Related Work   -- pending
+
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+
+\input{figures/fig1_architecture}
+
+\input{sections/03_methods}
+
+\input{tables/table1_cohort}
+\input{figures/fig2_cohort}
+
+\input{sections/04_results}
+
+\input{tables/table2_main}
+\input{tables/table3_priors}
+\input{tables/table4_auxiliary}
+
+\input{sections/05_discussion}
+
+\section*{Acknowledgements}
+This work was supported by the National Natural Science Foundation of China
+(grant nos. 82173586 and 82373644).
+
+\section*{Conflict of interest}
+The authors declare no competing interests.
+
+\section*{Data availability}
+The full clinical ultrasound image dataset analysed in this study is not
+publicly available because it contains patient-derived medical images and
+associated clinical information collected under institutional ethics approval
+and is subject to participant privacy and data-protection requirements.
+De-identified data necessary to verify the main findings are available under
+restricted access for non-commercial academic research, subject to
+institutional approval, applicable ethics requirements, and execution of a
+data-use agreement. Requests should be directed to the corresponding authors.
+
+\section*{Code availability}
+The code used for model development, training, and evaluation in this study
+will be made publicly available upon publication.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig3_stage_wise.pdf}
+\caption{Stage-wise performance of the baseline (A) and SynAP-Fib (E) on the
+patient-held-out test set (seed 2026, validation-selected checkpoints).
+(a) Stage-wise mean absolute error, recomputed post hoc from the frozen
+per-image predictions. (b) Stage-wise recall of the four clinical grades.
+Per-stage image support: F0 $n=1140$, F1 $n=1006$, F2 $n=1108$, F3 $n=853$.
+Lower is better in (a); higher is better in (b).}
+\label{fig:stagewise}
+\end{figure*}
+
+\input{figures/fig5_qualitative}
+
+\input{figures/fig4_confusion_calibration}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

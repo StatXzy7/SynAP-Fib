@@ -1,0 +1,13 @@
+% 图 1:架构图(图片复用英文原稿 figures/fig1_architecture.pdf)。
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.98\textwidth]{figures/fig1_architecture.pdf}
+\caption{SynAP-Fib 架构。ResNet-50 骨干网络从归一化的 $3 \times 512 \times
+512$ 输入中提取特征。分级头经线性输出层产生 36 档序数后验分布,连续分数由
+后验期望计算得到。部位分支(六类头)与病灶分支(由弱框并集监督的空间注意)
+将其输出经由学习到的标量门控(上界 $0.5$)以残差形式注入分级通路。
+\textbf{两处注入的梯度流均为双向隔离}:辅助损失仅更新各自分支,分级损失
+不经过注入流入分支头。真实部位仅在训练时使用;推理时分级通路读取预测的
+部位后验,无需任何解剖元数据。}
+\label{fig:architecture}
+\end{figure*}

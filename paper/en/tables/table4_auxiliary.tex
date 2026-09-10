@@ -1,0 +1,31 @@
+% Table IV -- anatomical prior outputs and computational cost.
+% All values from FACTS.md: F-POS-*, F-LES-*, F-COST-*.
+% Gate statistics (F-GATE-*) were moved to the Supplementary Material per
+% supervisor decision at node A.5: gate magnitude alone cannot establish
+% contribution size, so it does not belong in a main table.
+\begin{table*}[!t]
+\centering
+\caption{Anatomical prior outputs and computational cost on the
+patient-held-out test set (seed 2026, single seed, validation-selected
+checkpoints). Position metrics cover the six-class anatomical protocol; the
+lesion columns report agreement with weak bounding boxes and are not
+segmentation ground-truth performance. Cost is measured at batch~1 on
+$3\times512\times512$ input, counting Conv2d and Linear operations only.
+Parameter counts are rounded to $0.01$~M and branch metrics to four decimal
+places for display; unrounded values are given in the Supplementary Material.}
+\label{tab:auxiliary}
+\small
+\begin{tabular}{@{}l rrr rrr rrr@{}}
+\toprule
+ & \multicolumn{3}{c}{Position branch} & \multicolumn{3}{c}{Lesion branch (weak-box agreement)} & \multicolumn{3}{c}{Cost} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
+Arm & Acc.~$\uparrow$ & Macro-F1~$\uparrow$ & CE~$\downarrow$ & Dice@0.5~$\uparrow$ & IoU@0.5~$\uparrow$ & Valid boxes & Params (M) & GFLOPs & Latency (ms) \\
+\midrule
+A & --      & --     & --     & --     & --     & --    & 24.58 & 42.709 & 3.031 \\
+B & --      & --     & --     & --     & --     & --    & 24.58 & 42.709 & 2.989 \\
+C & 66.40\% & 0.6623 & 0.9444 & --     & --     & --    & 24.61 & 42.709 & 3.521 \\
+D & --      & --     & --     & 0.3539 & 0.2261 & 4,035 & 25.99 & 43.918 & 3.607 \\
+E & \textbf{66.81\%} & \textbf{0.6659} & \textbf{0.9165} & \textbf{0.3603} & \textbf{0.2355} & 4,035 & 26.02 & 43.918 & 3.993 \\
+\bottomrule
+\end{tabular}
+\end{table*}

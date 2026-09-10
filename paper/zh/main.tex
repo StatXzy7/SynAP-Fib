@@ -1,0 +1,98 @@
+% ============================================================
+% SynAP-Fib TMI 稿件中文参考译本(对应 synap_fib_tmi_20260904)
+% 用途:仅供作者参考与修改中文表述使用,不计入任何页数范围统计。
+% 编译:xelatex / latexmk -xelatex
+% 图片与参考文献复用原文目录(graphicspath 指向上级原稿目录)。
+% ============================================================
+\documentclass[journal]{IEEEtran}
+
+\usepackage{amsmath,amssymb,amsfonts,mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{cite}
+\usepackage[UTF8]{ctex}
+
+\graphicspath{{../en/}}
+
+\begin{document}
+
+\title{SynAP-Fib:面向血吸虫病超声肝纤维化细粒度分级的协同解剖先验}
+
+\author{Ziyang~Xu, \textit{et al.}\thanks{本中文译稿为
+\texttt{synap\_fib\_tmi\_20260904} 的参考译文,仅供作者修改中文表述使用,
+不用于投稿,亦不计入页数统计。以英文原稿为准。}}
+
+\maketitle
+
+\begin{abstract}
+血吸虫病相关肝纤维化的超声分级依赖于操作者,且具有解剖结构性:图像按标准化
+六部位协议采集,纤维化改变以粗边界框标注。我们提出 SynAP-Fib,一种细粒度
+分级模型,在序数分级骨干网络之上增设两个解剖先验分支:六类部位头与弱框病灶
+注意头。每个分支经由带双向梯度隔离边界的门控残差注入进入分级通路,使解剖
+监督得以塑造各分支,而分级通路仅消费其预测输出,推理时无需任何解剖元数据。
+在来自 35 个中心、6,373 名患者的 108,709 张感兴趣区(ROI)图像组成的多中心
+队列上,患者级留出测试集的 $2\times2$ 比较显示:单独引入任一先验均使预设的
+复合临床风险恶化,而联合配置保持了基线水平的分级精度,取得四种配置中观察
+到的最佳复合风险,并仅以 $5.9\%$ 的参数量与 $2.8\%$ 的算术开销额外输出解剖
+部位与弱病灶定位。在配对 bootstrap 分析下,联合配置与基线在主要终点上不可
+区分,因此联合配置被表述为最佳观察结果(best observed),而非已确立的改进。
+\end{abstract}
+
+\begin{IEEEkeywords}
+肝纤维化,超声,序数分级,解剖先验,辅助监督,血吸虫病。
+\end{IEEEkeywords}
+
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+
+\input{figures/fig1_architecture}
+
+\input{sections/03_methods}
+
+\input{tables/table1_cohort}
+\input{figures/fig2_cohort}
+
+\input{sections/04_results}
+
+\input{tables/table2_main}
+\input{tables/table3_priors}
+\input{tables/table4_auxiliary}
+
+\input{figures/fig4_confusion_calibration}
+
+\input{sections/05_discussion}
+
+\section*{致谢}
+本研究受国家自然科学基金资助(批准号:82173586 与 82373644)。
+
+\section*{利益冲突}
+作者声明不存在利益冲突。
+
+\section*{数据可得性}
+本研究所分析的全部临床超声图像数据集未公开,因为其中包含在机构伦理批准下
+采集的患者来源医学图像及配套临床信息,并受参与者隐私与数据保护要求约束。
+用于核验主要发现的去标识化数据,可在机构批准、适用伦理要求及签订数据使用
+协议的前提下,以受限访问方式用于非商业学术研究。申请请与通讯作者联系。
+
+\section*{代码可得性}
+本研究用于模型开发、训练与评估的代码将在论文发表后公开。
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig3_stage_wise.pdf}
+\caption{基线(A)与 SynAP-Fib(E)在患者级留出测试集上的分期表现
+(seed 2026,验证集选定的检查点)。(a) 分期平均绝对误差,由冻结的逐图像
+预测事后重算。(b) 四个临床分期的分期召回率。各分期图像支持量:F0
+$n=1140$,F1 $n=1006$,F2 $n=1108$,F3 $n=853$。(a) 越低越好;(b) 越高
+越好。}
+\label{fig:stagewise}
+\end{figure*}
+
+\input{figures/fig5_qualitative}
+
+\bibliographystyle{IEEEtran}
+\bibliography{../en/references}
+
+\end{document}

@@ -1,0 +1,24 @@
+% 表 IV —— 解剖先验输出与计算代价(数据与英文原稿完全一致)。
+\begin{table*}[!t]
+\centering
+\caption{患者级留出测试集上的解剖先验输出与计算代价(seed 2026,单种子,
+验证集选定检查点)。部位指标覆盖六类解剖协议;病灶各列报告的是与弱边界框
+的一致程度,并非分割真值表现。代价在 $3\times512\times512$ 输入、批大小 1
+下测量,仅统计 Conv2d 与 Linear 操作。参数量按 $0.01$~M、分支指标按四位
+小数显示取整;未取整数值见补充材料。}
+\label{tab:auxiliary}
+\small
+\begin{tabular}{@{}l rrr rrr rrr@{}}
+\toprule
+ & \multicolumn{3}{c}{部位分支} & \multicolumn{3}{c}{病灶分支(弱框一致性)} & \multicolumn{3}{c}{代价} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}
+臂 & 准确率~$\uparrow$ & Macro-F1~$\uparrow$ & CE~$\downarrow$ & Dice@0.5~$\uparrow$ & IoU@0.5~$\uparrow$ & 有效框数 & 参数量(M) & GFLOPs & 延迟(ms) \\
+\midrule
+A & --      & --     & --     & --     & --     & --    & 24.58 & 42.709 & 3.031 \\
+B & --      & --     & --     & --     & --     & --    & 24.58 & 42.709 & 2.989 \\
+C & 66.40\% & 0.6623 & 0.9444 & --     & --     & --    & 24.61 & 42.709 & 3.521 \\
+D & --      & --     & --     & 0.3539 & 0.2261 & 4,035 & 25.99 & 43.918 & 3.607 \\
+E & \textbf{66.81\%} & \textbf{0.6659} & \textbf{0.9165} & \textbf{0.3603} & \textbf{0.2355} & 4,035 & 26.02 & 43.918 & 3.993 \\
+\bottomrule
+\end{tabular}
+\end{table*}

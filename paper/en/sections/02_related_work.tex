@@ -1,0 +1,101 @@
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Ultrasound-based liver fibrosis grading}
+
+Automated fibrosis assessment from ultrasound has been pursued along several
+lines. One line augments B-mode input with additional physical measurements,
+such as contrast-enhanced micro-flow cines~\cite{microflow2023} or
+elastography-derived stiffness~\cite{swe2018staging}, trading equipment
+requirements for signal quality. A second line works from conventional B-mode
+images alone, using generative augmentation to compensate for limited
+data~\cite{usfibrosisgan2022}, higher-frequency acquisition to expose
+finer texture~\cite{hfus2025}, or paired organ views to exploit relative
+appearance~\cite{liverspleen2025}.
+
+These methods almost universally target a small number of discrete stages of
+fibrosis arising from viral, alcoholic or metabolic liver disease. The
+schistosomal setting differs in both the target and the phenotype. The septal,
+network-like fibrosis induced by \emph{S.~japonicum} presents differently from
+the diffuse parenchymal change typical of other
+etiologies~\cite{schistoelasto2018,schistopocus2024}, and the grading scale used
+in endemic screening programs is finer than a three- or four-way stage decision.
+SFibAI addressed this setting by casting grading as a posterior over 36 ordinal
+levels and reporting its expectation~\cite{xu2026sfibai}; the present work
+inherits that formulation and asks what anatomical structure adds to it.
+
+\subsection{Ordinal and fine-grained prediction}
+
+Treating graded severity as unordered classes discards the ordering that makes
+grades meaningful, and a substantial literature addresses this. One family
+reformulates the ordinal problem as a set of coupled binary decisions, enforcing
+rank consistency either architecturally~\cite{coral2020} or through conditional
+probability factorization~\cite{corn2023}. A second family discretizes a
+continuous quantity into ordered bins and predicts a per-bin probability
+distribution, as in ordinal depth
+estimation~\cite{dorn2018}. A third family regularizes the predicted
+distribution to be unimodal so that probability mass concentrates around
+neighbouring levels rather than scattering across the
+scale~\cite{unimodalbeta2021}.
+
+In medical imaging, ordinal formulations have been applied to disease severity
+grading, sometimes jointly with segmentation~\cite{sonnet2022}, and
+uncertainty-aware variants have been developed for retinal
+grading~\cite{drgraduate2020}. Our grading head follows the second family: a
+36-level posterior whose expectation is the reported score, combined with a
+neighborhood-aware soft-label term and a boundary-sensitive penalty inherited
+from SFibAI~\cite{xu2026sfibai}. We do not claim a new ordinal formulation;
+the fine-grained scale is the task setting within which the anatomical priors
+are studied, and it matters here because subtle level distinctions are precisely
+where additional structural context could plausibly contribute.
+
+\subsection{Anatomy-informed and auxiliary-supervised learning}
+
+The closest body of work injects anatomical knowledge into a network that
+performs a different primary task. Several strategies recur.
+
+\textbf{Attention conditioned on anatomy.} Attention-gated networks learn to
+emphasize salient regions and suppress irrelevant background without explicit
+localization supervision~\cite{attentiongated2019}. Anatomy-XNet extends this
+by supervising attention with anatomical segmentation masks so that thoracic
+disease classification attends to lung and heart
+regions~\cite{anatomyxnet2022}. SynAP-Fib shares the intent of steering the
+representation toward anatomically meaningful evidence, but its lesion signal is
+a coarse box union rather than an organ segmentation, and the resulting
+attention is injected into grading as a gated residual rather than used to
+reweight the backbone's own spatial attention.
+
+\textbf{Anatomy-partitioned architectures.} AGMB-Transformer routes features
+through anatomy-defined branches for automated evaluation of root canal
+therapy~\cite{agmbtransformer2021}, and anatomy-guided cascades exploit the
+known containment of the optic cup within the optic disc~\cite{opticdisc2020}.
+HoVer-Trans encodes the horizontal and vertical tissue layering of breast
+ultrasound directly into the transformer's attention
+structure~\cite{hovertrans2023}. These designs commit the architecture to a
+fixed anatomical decomposition. SynAP-Fib instead keeps a single shared
+backbone and treats anatomical position as a \emph{predicted} six-way posterior
+that modulates grading, so no branch is tied to a particular position and no
+position metadata is needed at inference.
+
+\textbf{Multi-task learning with auxiliary heads.} Joint segmentation and
+classification has been studied in breast ultrasound, where joint learning
+improves outcomes of both
+tasks~\cite{zhou2020mtlabus,shamtl2021}, and joint pose estimation with
+tissue segmentation has been used for fetal
+brains~\cite{petsnet2023}. Weakly supervised localization achieves a related
+effect with far cheaper labels, deriving lesion evidence from image-level
+supervision~\cite{covidweak2020,weakbreast3d2019}. In these designs the
+auxiliary branch typically shares gradients with the primary task, so its
+benefit and its interference are entangled: the auxiliary loss shapes the shared
+representation directly. SynAP-Fib deliberately separates the two pathways with
+a bidirectionally detached gradient boundary, so each branch contributes its
+\emph{output} as context rather than its gradient as regularization.
+
+\textbf{Positioning.} Individually, none of these ingredients is new:
+anatomy-supervised attention, position-conditioned prediction, auxiliary
+multi-task heads, weak-box supervision and gated feature fusion all have
+precedent. Several of the closely related studies considered here use a
+single auxiliary signal in their favourable configuration. The $2\times2$
+comparison we report addresses a different question: whether anatomical
+priors of distinct kinds compose, and it yields an answer that a
+single-prior study could not have surfaced.

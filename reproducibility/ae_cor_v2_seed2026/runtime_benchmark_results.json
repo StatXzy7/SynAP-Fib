@@ -1,0 +1,71 @@
+{
+  "backends": {
+    "compile": {
+      "error": "numerical audit failed",
+      "failures": [
+        "TritonMissing: Cannot find a working triton installation. Either the package is not installed or it is too old. More information on installing Triton can be found at: https://github.com/triton-lang/triton\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n"
+      ],
+      "graph_breaks": -1,
+      "numerical_audit_ok": false,
+      "stable": false
+    },
+    "eager": {
+      "images": 7200,
+      "images_per_second": 271.0655627947442,
+      "measured_batches": 300,
+      "seconds": 26.561839599860832,
+      "stable": true,
+      "warmup_batches": 20
+    }
+  },
+  "environment": {
+    "cuda": "12.8",
+    "gpu": "NVIDIA GeForce RTX 5090 D",
+    "torch": "2.11.0+cu128",
+    "torchvision": "0.26.0+cu128"
+  },
+  "protocol": {
+    "amp": true,
+    "arm": "E",
+    "batch_size": 24,
+    "compile_minimum_speedup": 0.08,
+    "cudnn_benchmark": true,
+    "measured_batches": 300,
+    "warmup_batches": 20,
+    "worker_candidates": [
+      4,
+      6,
+      8
+    ]
+  },
+  "selection": {
+    "backend": "eager",
+    "num_workers": 8
+  },
+  "workers": {
+    "4": {
+      "images": 7200,
+      "images_per_second": 238.56428751392883,
+      "measured_batches": 300,
+      "seconds": 30.180544100003317,
+      "stable": true,
+      "warmup_batches": 20
+    },
+    "6": {
+      "images": 7200,
+      "images_per_second": 270.8861223463908,
+      "measured_batches": 300,
+      "seconds": 26.57943469984457,
+      "stable": true,
+      "warmup_batches": 20
+    },
+    "8": {
+      "images": 7200,
+      "images_per_second": 271.0655627947442,
+      "measured_batches": 300,
+      "seconds": 26.561839599860832,
+      "stable": true,
+      "warmup_batches": 20
+    }
+  }
+}

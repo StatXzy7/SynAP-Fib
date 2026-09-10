@@ -1,0 +1,4 @@
+* -text whitespace=blank-at-eol,space-before-tab,cr-at-eol,-blank-at-eof
+*.pdf binary
+*.png binary
+*.jpg binary

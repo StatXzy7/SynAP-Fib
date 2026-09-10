@@ -1,0 +1,247 @@
+\section{Methods}
+\label{sec:methods}
+
+\subsection{Dataset and cohort}
+
+All experiments use a single curated dataset of B-mode ultrasound images of
+schistosomiasis-associated liver fibrosis, comprising 108,709 region-of-interest
+crops from 6,373 patients across 35 centers. The study protocol was approved by
+the Ethics Review Committee of the Jiangsu Institute of Parasitic Diseases
+(Approval ID: JIPD-2019-017), and all participants provided written informed
+consent prior to enrolment. Enrolment followed the criteria of the predecessor
+cohort study \cite{xu2026sfibai}: participants were recruited from
+schistosomiasis-endemic counties in Jiangsu Province, China, covering the full
+severity spectrum, including individuals with a confirmed history of
+\textit{Schistosoma japonicum} infection, registered advanced schistosomiasis
+patients, and non-infected controls. Sex and gender were not collected and were
+not considered in the study design.
+
+Each patient is acquired under a standardized six-position anatomical protocol
+comprising the subxiphoid sagittal plane (showing the left lobe of the liver),
+the left subcostal transverse plane (showing the left lobe and the sagittal
+segment of the portal vein), two right subcostal planes (showing the second
+porta hepatis with the confluence of three hepatic veins, and the right hepatic
+lobe with the right hepatic vein and diaphragm, respectively), and two right
+intercostal oblique planes (showing the right hepatic lobe with the portal vein
+and gallbladder, and with the right kidney, respectively). One to three images
+are acquired per plane, and every image carries a normalized position label
+together with a fibrosis score.
+
+Fibrosis severity is annotated on a fine-grained 36-level scale spanning
+$0.0$ to $3.5$ in steps of $0.1$. The four clinical strata derive from the
+Chinese national grading system for schistosomiasis-associated liver fibrosis
+\cite{moh2000schistomanual,moh2006schistocriteria}; their correspondence with
+international ultrasonographic guidelines, which were developed primarily for
+\textit{S.~mansoni} infection, is described in the WHO-chaired Basel
+ultrasonography protocol \cite{richter2025basel}. For clinical reporting the
+continuous scale is mapped to the conventional four-grade scale at the
+boundaries $0.5$, $1.5$ and $2.5$, with boundary values assigned to the higher
+grade. The image label is the maximum annotated score for that image, and the
+patient label is the maximum over that patient's images, reflecting the
+clinical convention that patient-level severity follows the most advanced
+finding.
+
+Annotation was performed in Labelme, with a rectangular bounding box drawn
+around each fibrotic region and assigned both the four-grade grouping and the
+fine-grained 36-level score. To ensure consistency in applying the 0.1-level
+scale, annotating physicians underwent two rounds of unified municipal- and
+provincial-level training; the labels were then centrally reviewed by a
+coordinating group, with corrective feedback on discrepancies, and a subset of
+cases underwent blinded review and secondary evaluation. The target overall
+discrepancy rate was below 5\%, and cases with major disagreements were jointly
+reviewed to reach a consensus grade.
+
+Quality control of the image data excluded: an acquisition batch collected
+under a non-standard position protocol; images whose region-of-interest crop
+or annotation box failed validation; duplicate images identified by post-crop
+content hashing, including all conflicting duplicates crossing patients,
+centers or labels; images without a valid annotation, which were not treated
+as negative; and patients with fewer than five of the six standard positions
+represented. Splits were generated only after cleaning and deduplication, so
+that no patient or duplicate group crosses a split boundary.
+
+The dataset is partitioned at the patient level into 83,722 training images
+from 4,906 patients, 20,880 validation images from 1,227 patients, and 4,107
+test images from 240 patients. There is no patient overlap across training,
+validation and test sets. Centers were shared across splits: all four centers
+represented in the test set also appear in the training split. The test set
+therefore evaluates generalization to unseen patients within observed centers,
+and we refer to it throughout as the patient-held-out test set. Center-balanced
+patient-level metrics were used to reduce the influence of differences in center
+sample size, rather than to estimate performance on unseen centers.
+
+Table~\ref{tab:cohort} reports the full per-split composition. The test cohort
+contains 60 patients in each of F0, F1, F2 and F3, whereas training and
+validation follow the cohort distribution, in which F2 is the most frequent
+patient-level grade. Because the test cohort was stage-balanced (60 patients per
+stage), aggregate performance should not be interpreted as a prevalence-weighted
+estimate for a population screening setting. Image-level counts are not exactly
+balanced, since patients contribute differing numbers of images.
+
+\subsection{Preprocessing}
+
+All images are resized to $512\times512$ and normalized with ImageNet
+statistics. The principal configurations resize by anisotropic stretching; one
+control configuration instead uses aspect-preserving letterbox padding, so that
+the effect of the resize convention can be separated from the modeling
+contributions.
+
+Training augmentation consists of a non-zero multiple-of-$90^\circ$ rotation
+applied with probability $0.7$ and a saturation jitter in the range
+$0.75$--$1.25$ applied with probability $0.5$. No flipping or cropping is used,
+because horizontal flipping is not anatomically meaningful under the six-position
+acquisition protocol and cropping would disturb the region-of-interest geometry.
+Configurations that are compared pairwise share both sample ordering and
+per-sample augmentation draws, so that observed differences do not arise from
+divergent data presentation.
+
+For the lesion branch, the weak supervision target is constructed as a union
+mask over the annotated boxes in the original region-of-interest coordinate
+frame, and is then resized and rotated synchronously with the image using
+nearest-neighbour interpolation to preserve label values. Systematic
+misalignment between image and mask is treated as a hard failure; single-pixel
+boundary discretization differences are tolerated.
+
+\subsection{SynAP-Fib architecture}
+
+\subsubsection{Grading backbone}
+
+The grading pathway follows the SFibAI formulation~\cite{xu2026sfibai}: a
+ResNet-50 backbone initialized from \texttt{IMAGENET1K\_V2} weights, followed by
+an ordinal head producing a posterior over the 36 discrete fibrosis levels. The
+reported continuous prediction is the posterior expectation
+\begin{equation}
+\hat{y} = \sum_{k=0}^{35} p_k \cdot \frac{k}{10},
+\label{eq:score}
+\end{equation}
+which yields a smooth estimate consistent with the continuous progression of
+fibrosis rather than a hard level assignment.
+
+The SFibAI baseline was retrained from scratch under the present
+preprocessing, split, and evaluation protocol; consequently, its performance in
+this study should not be directly compared with values reported under the
+original SFibAI experimental setting.
+
+\subsubsection{Anatomical prior branches}
+
+SynAP-Fib augments this backbone with two anatomical prior branches, shown in
+Fig.~\ref{fig:architecture}.
+
+The \emph{position branch} is a six-class head trained with cross-entropy
+against the normalized position label. Ground-truth position is used only as a
+training supervision signal. At inference the grading pathway reads the
+\emph{predicted} position posterior, never the position metadata, so that the
+method remains deployable in settings where reliable position metadata is
+unavailable.
+
+The \emph{lesion branch} predicts a spatial attention map supervised by the weak
+box union target. Only images with a positive fibrosis grade and at least one
+annotated box contribute to this objective; F0 images and images lacking boxes
+are excluded from the lesion loss.
+
+\subsubsection{Gated residual injection}
+
+Each branch influences grading through the same mechanism. The branch output is
+converted into a weighted feature representation and added to the grading
+representation as a residual, scaled by a learned gate bounded above by
+$\mathrm{gate\_max}=0.5$ and initialized at
+$\mathrm{residual\_init\_scale}=0.001$ so that training begins close to the
+baseline pathway. The joint configuration superimposes both residuals.
+
+The gradient boundary between the branches and the grading pathway is
+bidirectionally detached: gradients from the grading loss do not flow back into
+the branch heads through the injection, and gradients from the branch losses do
+not propagate into the grading pathway through it. The branches therefore act as
+sources of anatomical context rather than as additional gradient paths into the
+shared representation. All gate hyperparameters are held fixed across every
+configuration, so no configuration is advantaged by gate tuning.
+
+\subsection{Training protocol}
+
+Every configuration is trained for 120 epochs without early stopping, using
+AdamW with learning rate $10^{-4}$, weight decay $10^{-4}$, batch size 24, mixed
+precision, and a step schedule that multiplies the learning rate by $0.6$ every
+15 epochs. All configurations start from the same pretrained initialization,
+with modules shared between configurations initialized identically tensor by
+tensor under the common seed.
+
+The grading objective is the inherited SFibAI hybrid ordinal loss, which
+combines a neighborhood-aware soft-label term, an expectation regression term
+and a boundary-sensitive penalty, weighted by $\alpha=1.0$, $\beta=0.02$ and
+$\gamma=0.02$ with a soft-label standard deviation of $1.0$. The position and
+weak-box objectives each enter the total loss with an outer weight of $0.1$.
+
+All models were trained on a single NVIDIA GeForce RTX 5090 D GPU (CUDA 12.8)
+using PyTorch 2.11.0 and torchvision 0.26.0 under Python 3.10, with automatic
+mixed precision.
+
+\subsection{Evaluation protocol}
+
+\subsubsection{Clinical objective risk}
+
+Evaluation uses a composite clinical objective risk (COR) that penalizes both
+continuous score error and clinically consequential grade errors. Writing
+$e = |\hat{y}-y|$ for the absolute score error and
+$d = |\mathrm{grade}(\hat{y})-\mathrm{grade}(y)|$ for the grade distance,
+\begin{align}
+\mathrm{COR} ={}& 0.35\frac{e}{3.5} + 0.15\,\mathbb{I}(e>0.3) + 0.15\,\mathbb{I}(e>0.5) \nonumber\\
+             & + 0.25\frac{d}{3} + 0.10\,\mathbb{I}(d\geq2).
+\label{eq:cor}
+\end{align}
+All samples are weighted equally and lower values indicate better performance.
+
+\subsubsection{Aggregation levels}
+
+COR is aggregated at three levels. The image-level risk $R_{\mathrm{image}}$ is
+the mean per-image COR. The patient-max risk $R_{\mathrm{patient\text{-}max}}$
+takes the maximum over each patient's true and predicted image scores
+symmetrically before computing COR, matching the clinical convention that
+patient severity follows the most advanced image. The center-balanced risk
+$R_{\mathrm{cb}}$ computes patient-max COR within each center and then combines
+centers with weights proportional to the square root of each center's patient
+count; its purpose is to prevent large centers from disproportionately
+dominating the aggregate patient-level evaluation, not to estimate performance
+on unseen centers.
+
+The prespecified primary endpoint combines the three levels as
+\begin{equation}
+R_{\mathrm{final}} = 0.4\,R_{\mathrm{image}} + 0.4\,R_{\mathrm{patient\text{-}max}}
+                   + 0.2\,R_{\mathrm{cb}}.
+\label{eq:rfinal}
+\end{equation}
+A patient-median aggregation, computed symmetrically over true and predicted
+scores, is retained as a robustness analysis.
+
+\subsubsection{Reported metrics}
+
+Alongside COR we report mean absolute error, accuracy within $\pm0.3$ and
+$\pm0.5$, four-grade accuracy and macro-F1. Two error-profile metrics are used.
+The excess-error metric beyond a $0.5$ tolerance,
+$\mathrm{TMAE} = \mathbb{E}[\max(e-0.5,\,0)]$, is zero for predictions inside
+the tolerance band and grows only with the portion of error exceeding it. The
+severe error rate is defined on the continuous score as
+$\Pr(e>1.0)$. Discrimination and calibration are summarized by macro AUROC,
+macro AUPRC, the Brier score and expected calibration error.
+
+For the lesion branch we report Dice and IoU at a threshold of $0.5$ against the
+weak box union. These quantify agreement with weak bounding boxes and must not
+be read as lesion segmentation ground-truth performance, since no pixel-level
+lesion annotation exists in this cohort.
+
+\subsection{Checkpoint selection and reporting discipline}
+
+Checkpoint selection uses the validation set only. Every epoch is fully
+evaluated on validation; epochs 1--20 are treated as burn-in and are ineligible
+for selection. Within epochs 21--120 the selected checkpoint is the one with the
+lowest validation $R_{\mathrm{final}}$, resolving ties by lower validation image
+COR and then by earlier epoch. No smoothing, early stopping or selector
+resampling is applied. The test set plays no role in checkpoint, threshold or
+calibration selection.
+
+The comparison reported here is a single-seed comparison under seed 2026, and we
+do not present it as evidence about run-to-run variability. Two metrics are
+recomputed post hoc from the frozen per-image predictions and are labelled as
+such throughout: stage-wise mean absolute error, and quadratic-weighted Cohen's
+$\kappa$ over the 36 levels. Continuous posterior-expectation predictions were
+mapped to the nearest one of the 36 valid grades before computing
+quadratic-weighted Cohen's $\kappa$; posterior argmax predictions were not used.

@@ -1,0 +1,6 @@
+{
+  "backend": "eager",
+  "benchmark_results": "D:\\PhD\\liver-Fibrosis-B\\research-private\\experiments\\SFibAI-B_AE_COR_v2\\preflight\\runtime_benchmark\\benchmark_results.json",
+  "benchmark_sha256": "daf4ec3de2adbf93702c8336e8c6e5ebb3e371dc34e60d44f0b9e5773892e6a3",
+  "num_workers": 8
+}

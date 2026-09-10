@@ -1,0 +1,112 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Interpretation}
+
+The central observation of this study concerns how two anatomical priors behave
+when introduced into the same fine-grained grading backbone. Supervising
+anatomical position alone, or weak lesion extent alone, left the composite
+grading risk worse than the unmodified baseline. Supplying both together did not
+inherit that degradation, and produced the best observed composite risk of the
+four configurations. This is a non-additive empirical pattern: the behavior of
+the joint configuration is not what either single-prior configuration would
+suggest on its own.
+
+We can offer a plausible account, while noting that our experiments do not
+isolate the mechanism. Each prior, taken alone, adds a training objective whose
+optimum need not align with fine-grained grading. Position classification
+rewards features that discriminate scan location, and weak-box attention rewards
+features that concentrate on annotated regions; neither objective is
+intrinsically about septal texture. Injected in isolation, such a signal may
+displace grading-relevant capacity. When both are present, the position estimate
+supplies the anatomical frame within which the lesion attention is interpreted,
+and the two together may describe evidence more completely than either does
+alone. This account is consistent with the observations but is not established
+by them, and disentangling multi-task regularization from prediction injection
+would require a configuration that retains both auxiliary losses while
+suppressing the residual injection. We did not run that configuration.
+
+A second observation is more directly actionable. The joint configuration
+produced two additional outputs -- a six-class anatomical position estimate and
+a weak lesion localization map -- for a $5.9\%$ parameter and $2.8\%$ arithmetic
+overhead, with median single-image latency remaining below $4$~ms. Both outputs
+are derived from the image alone and require no metadata at inference. In a
+screening workflow, a position estimate permits automatic checking that the
+standardized six-position protocol was followed, and a localization map gives
+the reader something to inspect alongside a numeric score. Neither capability
+existed in the baseline, and neither required additional annotation beyond what
+the cohort already carried.
+
+The stage-wise analysis argues against a single summary of where difficulty
+lies. Mean absolute error was largest at F2 for both configurations, whereas
+recall was lowest at F1. These two metrics therefore identify different stages
+as hardest. It is clinically plausible that mild fibrosis presents subtler and
+more heterogeneous sonographic
+manifestations than either normal parenchyma or advanced disease, which would be
+consistent with the observed F1 recall; we note this as a plausible reading
+rather than a demonstrated explanation.
+
+Finally, the comparison between the two resize conventions favoured anisotropic
+stretching over aspect-preserving letterbox padding on the composite endpoint.
+We retained stretching as the default preprocessing for all modeling
+configurations on this basis, and report the letterbox control in
+Table~\ref{tab:main} so that the choice is visible rather than implicit.
+
+\subsection{Limitations}
+
+Several limitations bound what the present study establishes.
+
+\textbf{Etiological and institutional scope.} The cohort consists exclusively of
+\emph{Schistosoma japonicum}-associated liver fibrosis. The septal, network-like
+phenotype that makes anatomical context plausible here differs from the diffuse
+parenchymal change of viral, alcoholic and metabolic liver disease, and none of
+our results speak to those etiologies. Separately, although the cohort is
+multicenter and the test split is patient-disjoint, the same centers were
+represented during training and testing. The present study therefore does not
+establish generalization to unseen institutions or acquisition environments,
+which would require dedicated external validation at centers absent from
+training.
+
+\textbf{Test cohort composition and center sizes.} The test cohort contained
+60~patients in each of the four stages, whereas training and validation followed
+the cohort distribution. Aggregate test performance should accordingly not be
+read as a prevalence-weighted estimate for a screening population. The four test
+centers also contributed very unequal numbers of patients, from 2 to 115, so
+center-specific estimates -- reported in the Supplementary Material -- are
+descriptive, and those from the smallest centers should be interpreted with
+caution.
+
+\textbf{Single configuration and single seed.} The comparison rests on one
+prespecified seed, and we do not present it as evidence about run-to-run
+variability; the margin separating the joint configuration from the baseline on
+the primary endpoint is small relative to what a single run can resolve, and we
+therefore describe the joint configuration as the best observed rather than as an
+established improvement. The design was also evaluated with the prespecified
+ResNet-50-based framework only, and its robustness across alternative backbone
+architectures remains to be established.
+
+\textbf{Reference standard and lesion supervision.} Grading labels derive from
+expert ultrasonographic reading rather than histopathology, as is necessary for a
+non-invasive screening cohort of this scale, so the model is calibrated to expert
+consensus rather than to tissue-level ground truth. The lesion branch is
+supervised by coarse bounding boxes; the reported Dice and IoU quantify agreement
+with those weak annotations and are not measurements of lesion segmentation
+accuracy, for which no pixel-level reference exists in this cohort.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented SynAP-Fib, a fine-grained ultrasound grading model for
+schistosomiasis-associated liver fibrosis in which anatomical position and weak
+lesion evidence serve as training-time supervision and as inference-time context
+through gated, gradient-isolated residual injection, requiring no anatomical
+metadata at deployment. A $2\times2$ comparison of the two priors revealed a
+non-additive empirical pattern: either prior alone degraded the prespecified
+composite grading risk, whereas their combination did not and attained the best
+observed composite risk among the four configurations. The joint configuration
+additionally emitted anatomical position and weak lesion localization outputs at
+a small computational cost while retaining baseline-level grading performance.
+Establishing that these gains hold across seeds, backbones and institutions
+absent from training remains future work, as does isolating whether the benefit
+of the joint configuration arises from auxiliary-task regularization or from the
+injection of the predicted anatomical context itself.

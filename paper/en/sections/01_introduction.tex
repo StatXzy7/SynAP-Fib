@@ -1,0 +1,101 @@
+\section{Introduction}
+\label{sec:intro}
+
+Schistosomiasis remains a major parasitic burden in endemic regions, and
+\emph{Schistosoma japonicum} infection drives a distinctive form of hepatic
+injury. Eggs trapped in the periportal tracts provoke granulomatous
+inflammation and progressive septal fibrosis, producing the reticular,
+network-like and tortoise-shell echo patterns that characterize the disease on
+B-mode ultrasound. Because ultrasonography is inexpensive, portable and free of
+ionizing radiation, it is the practical modality for large-scale screening and
+longitudinal follow-up in endemic areas, where transient elastography and
+magnetic resonance imaging are rarely
+available~\cite{schistoelasto2018,schistopocus2024}.
+
+Ultrasound-based staging, however, depends heavily on operator experience.
+Interobserver reproducibility has also been evaluated in shear-wave
+elastography for hepatitis C-associated liver fibrosis, with excellent
+agreement reported for the point shear-wave method studied by
+Kaposi et al.~\cite{interobserver2019}, and a meta-analysis of
+two-dimensional shear-wave elastography reported heterogeneity in diagnostic
+performance across studies, with differences in sampling protocols and
+equipment discussed as possible contributors~\cite{swe2018staging}.
+These studies concern elastography rather than automated grading of B-mode
+images. A separate body of work applies deep learning to ultrasound-based
+fibrosis assessment~\cite{usfibrosisgan2022,microflow2023,hfus2025,liverspleen2025}.
+
+Two properties distinguish the schistosomal grading task from generic fibrosis
+classification, and both shape the present work.
+
+First, the clinically meaningful target is \emph{fine-grained}. The
+conventional four-grade scale is interpretable but coarse relative to the
+continuous progression of septal fibrosis, and a quantized 36-level scale in
+steps of $0.1$ better reflects gradual change while remaining mappable to the
+familiar clinical grades. Our previous work, SFibAI, established that such
+fine-grained continuous scoring is feasible at the image level by predicting a
+posterior over the 36 levels and reporting its
+expectation~\cite{xu2026sfibai}. Precisely because the target is fine-grained,
+the discriminative evidence is subtle: the model must resolve differences in
+septal texture and parenchymal architecture that a four-way decision boundary
+would never need to distinguish.
+
+Second, acquisition is \emph{anatomically structured}. Images are collected
+under a standardized six-position protocol, so each image carries a known
+anatomical position, and fibrotic change is annotated with coarse bounding
+boxes. Both signals are available at training time, and both are plausibly
+informative: the appearance of normal parenchyma differs systematically across
+scan positions, so knowing where an image was taken changes what should be
+regarded as abnormal.
+
+This raises the question we study. Anatomical position and lesion extent are
+readily available as \emph{training} supervision, but they cannot be assumed
+present at deployment: position metadata is often missing or unreliable in
+routine practice, and box annotation is a research-time artifact. A useful
+design must therefore learn from these signals without depending on them at
+inference. Whether such anatomical supervision actually helps fine-grained
+grading, and whether the two signals help in the same way, is not obvious a
+priori.
+
+We introduce \textbf{SynAP-Fib}, which augments the SFibAI grading backbone
+with two anatomical prior branches: a six-class position head and a weak-box
+lesion attention head. Each branch feeds the grading pathway through a gated
+residual injection with a bidirectionally detached gradient boundary, so that
+the branches supply anatomical context without becoming additional gradient
+routes into the shared representation. At inference the grading pathway
+consumes only the model's own \emph{predicted} position posterior and lesion
+attention; no position metadata or box annotation is required.
+
+Evaluating the two priors separately and jointly yields the central empirical
+observation of this paper. Adding either prior alone degraded the composite
+grading risk relative to the baseline, yet supplying both together did not
+inherit that degradation and produced the best observed composite risk among
+the four configurations. The behavior of the joint configuration is therefore
+not what the two single-prior configurations would predict in isolation.
+
+Our contributions are as follows.
+
+\begin{itemize}
+\item We present SynAP-Fib, a fine-grained ultrasound liver fibrosis grading
+      model in which anatomical position and weak lesion evidence act as
+      training-time supervision and as inference-time context through gated,
+      gradient-isolated residual injection, requiring no anatomical metadata at
+      deployment.
+\item We report a $2\times2$ comparison of the two anatomical priors showing a
+      non-additive empirical pattern: each prior alone degrades composite
+      grading risk, whereas their combination does not, and attains the best
+      observed composite risk of the four configurations.
+\item We show that the joint configuration supplies two additional clinically
+      interpretable outputs -- six-class anatomical position and weak lesion
+      localization -- for a $5.9\%$ parameter and $2.8\%$ arithmetic overhead,
+      while retaining baseline-level grading accuracy.
+\item We evaluate under a prespecified, clinically weighted composite risk that
+      combines image-level, patient-level and center-balanced views, with
+      checkpoint selection confined to the validation split and the test split
+      reserved for reporting.
+\end{itemize}
+
+The remainder of the paper is organized as follows. Section~\ref{sec:related}
+positions SynAP-Fib against prior work. Section~\ref{sec:methods} describes the
+cohort, architecture and evaluation protocol. Section~\ref{sec:results} reports
+the results, and Section~\ref{sec:discussion} discusses their interpretation and
+limitations.

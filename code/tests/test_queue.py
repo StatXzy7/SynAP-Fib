@@ -1,0 +1,9 @@
+from sfibai_b.queue import formal_task_order
+
+
+from sfibai_b.protocol import ARMS, SEEDS
+
+
+def test_queue_contains_exactly_the_single_seed_a_through_e_matrix() -> None:
+    tasks = formal_task_order()
+    assert tasks == [(arm, SEEDS[0]) for arm in ARMS]

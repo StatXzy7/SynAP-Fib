@@ -1,0 +1,107 @@
+\section{Results}
+\label{sec:results}
+
+\subsection{Cohort and evaluation setting}
+
+Table~\ref{tab:cohort} summarizes the cohort and its partition. The
+patient-held-out test set comprises 4,107 images from 240 patients across four
+centers. The split is performed at the patient level and contains no patient
+overlap with the training set; all four centers represented in the test set
+also appear in the training split, so the test set characterizes performance
+on unseen patients rather than on unseen institutions.
+
+The test cohort contains 60 patients in each of F0, F1, F2 and F3, whereas
+training and validation follow the cohort distribution, in which F2 is the most
+frequent patient-level grade. Because each of the four stages contributes 60 of
+the 240 test patients, aggregate performance should not be interpreted as a
+prevalence-weighted estimate for a population screening setting. Image-level
+counts are not exactly balanced, as patients contribute differing numbers of
+images.
+
+All results below use each configuration's validation-selected checkpoint
+under the single prespecified seed~2026.
+
+\subsection{Grading performance}
+
+Table~\ref{tab:main} reports the composite endpoint and its constituent
+image-level and patient-level metrics for all five configurations. The observed
+ordering by $R_{\mathrm{final}}$ is
+E~($0.186865$) $<$ A~($0.187312$) $<$ D~($0.196686$) $<$ B~($0.198100$) $<$
+C~($0.200202$). SynAP-Fib (E) therefore attains the best observed
+$R_{\mathrm{final}}$ among the five configurations.
+
+Configuration E also records the lowest image-level COR ($0.177908$) and mean
+absolute error ($0.377857$), the lowest patient-max COR ($0.200528$) and the
+lowest patient-max MAE ($0.420558$). Metric-specific optima differed across
+configurations: B yielded the highest four-class accuracy ($67.40\%$), whereas
+C yielded the highest $\pm0.5$ accuracy ($70.17\%$); E achieved the lowest
+observed $R_{\mathrm{final}}$.
+
+\subsection{Position and lesion priors in combination}
+
+Table~\ref{tab:priors} arranges the four stretch-resize configurations as a
+$2\times2$ comparison of the position and lesion priors. Introducing either
+prior on its own degraded the composite grading metric relative to the
+baseline: $R_{\mathrm{final}}$ rose from $0.187312$ for A to $0.200202$ for the
+position-only configuration C and to $0.196686$ for the lesion-only
+configuration D. The same direction holds for both constituent COR terms, so
+the degradation is not confined to a single aggregation level.
+
+The joint configuration E did not inherit this degradation. It recovered the
+loss observed under either single prior and attained the best observed
+$R_{\mathrm{final}}$, image COR and patient-max COR of the four
+configurations. The advantage of the joint configuration over the position-only
+configuration is supported by the supplementary paired bootstrap analysis
+(95\% CI for E~$-$~C: $-0.024376$ to $-0.002223$). This is a non-additive
+empirical pattern: the effect of supplying both priors together is not what the
+two single-prior configurations would suggest in isolation.
+
+\subsection{Stage-wise performance}
+
+Fig.~\ref{fig:stagewise} compares the baseline and SynAP-Fib across the four
+clinical stages. Stage-wise MAE was recomputed post hoc from the frozen
+per-image predictions.
+
+For stage-wise MAE, E is lower than A at F0 ($0.196277$ versus $0.196508$),
+F1 ($0.411035$ versus $0.416107$) and F3 ($0.401280$ versus $0.403570$), and
+higher than A at F2 ($0.516525$ versus $0.514474$). For both configurations
+the largest stage-wise MAE occurs at F2.
+
+For stage-wise recall, E is higher than A at F0 ($81.14\%$ versus $80.18\%$)
+and F1 ($50.50\%$ versus $49.50\%$), equal at F2 ($63.63\%$ for both) and lower
+at F3 ($72.10\%$ versus $73.27\%$). For both configurations the lowest recall
+occurs at F1.
+
+The two metrics therefore identify different stages as most difficult: F2
+carries the largest stage-wise MAE, while F1 carries the lowest recall.
+
+\subsection{Anatomical prior outputs and computational cost}
+
+Beyond the fibrosis score, the joint configuration emits two additional
+outputs, summarized in Table~\ref{tab:auxiliary}. Position classification over
+the six-class anatomical protocol reaches $66.81\%$ accuracy and $0.6659$
+macro-F1 in E, compared with $66.40\%$ and $0.6623$ in the position-only
+configuration C, with a lower cross-entropy ($0.9165$ versus $0.9444$).
+Agreement with the weak bounding boxes reaches Dice@0.5 of $0.3603$ and
+IoU@0.5 of $0.2355$ over 4,035 valid boxes in E, compared with $0.3539$ and
+$0.2261$ in the lesion-only configuration D. These lesion figures quantify
+agreement with weak boxes and are not segmentation ground-truth performance.
+
+The cost of these additional outputs is modest. Relative to the baseline,
+E adds 1,442,673 parameters, a $5.9\%$ increase, and $2.8\%$ more
+multiply--accumulate operations, with median single-image latency rising from
+$3.031$~ms to $3.993$~ms. Learned gate distributions for both residual pathways
+are reported in the Supplementary Material.
+
+\subsection{Checkpoint selection diagnostic}
+
+For configurations A, B, D and E the validation-selected checkpoint also
+outperformed that configuration's epoch-120 checkpoint on the test set.
+Configuration C is the sole exception, with a best-checkpoint test
+$R_{\mathrm{final}}$ of $0.200202$ against $0.191930$ at epoch~120. The
+prespecified selection rule was applied without post-hoc substitution, and the
+reported ranking therefore uses the validation-selected checkpoint throughout.
+
+Paired bootstrap analyses of all prespecified contrasts, together with
+discrimination, calibration, patient-median and per-center results, are
+provided in the Supplementary Material.
