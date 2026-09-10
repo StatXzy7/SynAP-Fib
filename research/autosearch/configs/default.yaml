@@ -1,0 +1,36 @@
+round: synap-autosearch-v1
+data:
+  root: null
+  output: null
+  image_size: 512
+  resize: stretch
+  augmentation: legacy
+  inner_seed: 31001
+  inner_fraction: 0.2
+  recipe_version: v1
+train:
+  seed: 31001
+  epochs: 120
+  batch_size: 8
+  workers: 0
+  lr: 0.0001
+  head_multiplier: 1
+  weight_decay: 0.0001
+  scheduler: step
+  precision: fp32
+  ema: 0.0
+  pretrained: true
+  device: cuda
+search:
+  baseline_trials: 8
+  mechanism_trials: 24
+  recipe_trials: 8
+  final_candidates: 2
+  seeds: [34001, 34002, 34003]
+  rungs: [30, 60, 120]
+  calibration_trials: 6
+  minimum_rank_correlation: 0.5
+constraints:
+  position_macro_f1_tolerance: 0.0
+  weak_box_iou_tolerance: 0.0
+  aggregation: mean_over_fixed_seeds
