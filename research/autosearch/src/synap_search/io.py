@@ -33,6 +33,13 @@ def read_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def write_bytes(path, value):
+    path = Path(path)
+    tmp = path.with_name(path.name + ".partial")
+    tmp.write_bytes(value)
+    os.replace(tmp, path)
+
+
 def save_checkpoint(path, value):
     path = Path(path)
     tmp = path.with_name(path.name + ".partial")
@@ -43,7 +50,10 @@ def save_checkpoint(path, value):
 def source_fingerprint():
     import sfibai_b
     roots = [Path(__file__).parent, Path(sfibai_b.__file__).parent]
-    return {root.name + "/" + p.name: sha256(p) for root in roots for p in sorted(root.glob("*.py"))}
+    result = {root.name + "/" + p.name: sha256(p) for root in roots for p in sorted(root.glob("*.py"))}
+    package = Path(__file__).parents[2]
+    result.update({"protocol/" + n: sha256(package / n) for n in ("PROTOCOL.md", "SEARCH_SPACE.yaml", "pyproject.toml")})
+    return result
 
 
 def environment():

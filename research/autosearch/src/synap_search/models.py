@@ -102,7 +102,7 @@ class SearchModel(nn.Module):
                   "position_logits": q_logits, "position_probs": q,
                   "lesion_logits": lesion, "lesion_attention": attention}
         if self.config.mechanism == "M4":
-            result["local_logits"] = self.local_severity(local)
+            result["local_logits"] = self.local_severity(gradient_scale(local,self.config.auxiliary_eta))
         return result
 
 
@@ -136,7 +136,7 @@ class SearchObjective(nn.Module):
             valid = targets >= 0
             loss = F.cross_entropy(logits, targets, ignore_index=-1) if valid.any() else logits.sum() * 0
             result["local_severity"] = loss
-            result["total"] = result["total"] + self.config.local_weight * loss
+            result["total"] = result["total"] + self.base.aux_scale * self.config.local_weight * loss
         return result
 
 

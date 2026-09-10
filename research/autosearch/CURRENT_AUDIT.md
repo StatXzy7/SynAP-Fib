@@ -29,3 +29,29 @@ exhaustive annotation completeness remain unverified even after identity PASS.
 
 No test performance has been computed for this round. Costs and auxiliary quality
 are measured during actual runs; CPU synthetic behavior is not research evidence.
+
+## Executed local evidence (2026-09-11)
+
+- All 108709 image content hashes matched. Native train/val/test counts matched
+  83722/20880/4107 images,4906/1227/240 patients,35/33/4 centers. No cross-split
+  patient or image-hash overlap was found. Manifest and annotation SHA256 match
+  the canonical protocol; no annotation/image max-label mismatch or missing
+  image annotation was found.
+- All109882 annotations declare rectangle.909 boxes are below their image's
+  max grade;181 images have exact score0.0. These counts do not establish
+  exhaustive lesion annotation or absence of unannotated pathology.
+- Train position1..6 counts:14137,14092,14121,14047,13960,13365. Validation:
+  3515,3524,3556,3521,3478,3286. Names remain unverified. Inner train/val contain
+  66929/16793 images and no patient is shared.
+- First128 inner-train images had mean channel spread4.397/255; this sample
+  does not justify claiming saturation always has no effect or eliminating the
+  baseline augmentation. Rot90 versus conservative augmentation remains a
+  recipe comparison with six-class metrics, not an assumed direction.
+- New suite45 passed; legacy targeted suite29 passed,1 skipped (its remote
+  configured data path is absent locally),1 existing tensor-conversion warning.
+- Real8x512 maximum FPN decoder FP32 smoke: two finite optimizer updates,
+  peak allocated CUDA memory4584638976 bytes; separate BF16 loss/gradients finite.
+  This is stability evidence, not a throughput benchmark or model-quality result.
+- Full raw evidence is in ignored outputs/DATA_AUDIT.json,GRADIENT_TOPOLOGY.json,
+  SMOKE.json and private command logs. FINAL_MANIFEST is produced only after
+  actual120-epoch three-seed confirmation; it does not yet exist.

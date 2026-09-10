@@ -1,6 +1,4 @@
-from dataclasses import asdict, replace
 from pathlib import Path
-import copy
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,7 +12,7 @@ from synap_search.models import SearchModel, SearchObjective, gradient_scale, im
 from synap_search.data import inner_partition, geometry, transform_box, predicted_regions, safe_image_path, DevelopmentDataset
 from synap_search.training import learning_rate_factor, loader, rng_state, restore_rng
 from synap_search.search import feasible, pruning_allowed
-from synap_search.io import cache_key, digest, write_json
+from synap_search.io import cache_key, digest
 from synap_search.smoke import synthetic_batch, gradient_matrix
 
 

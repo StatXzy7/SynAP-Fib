@@ -88,8 +88,15 @@ separate records. Never call a pruned trial feasible. A baseline recipe and
 candidate recipe each have 8 full-horizon resource opportunities; 24 extra
 mechanism trials are disclosed separately, not called matched total compute.
 
-Optuna 4.9.0 TPESampler (6 startup trials), SQLite persistent study and sampler
-state; SuccessiveHalvingPruner(min_resource=30,reduction_factor=2). Constraints
+Optuna 4.9.0 TPESampler (6 startup trials), with per-parameter RNG seeded from
+SHA256(development seed, trial number, parameter name). This preserves identical
+suggestions after mid-proposal interruption; persisted parameters do not consume
+different RNG positions. SQLite persistent study and sampler
+state; ASHA-style explicit halving at30/60 (upper half pruned, ties retained).
+The controller atomically records peer values, cutoff and decision before
+pruning, and replays saved rung decisions on resume. Optuna's standard pruner is
+configured for reference but its stateful should_prune is not the crash-recovery
+authority. Constraints
 are explicit controller checks, not a deprecated or prune-dependent constraints
 API. Registry records failed/pruned/completed trials; same trial only resumes
 with identical config, source, environment and development files. Scientific
@@ -136,6 +143,10 @@ segmentation. Existing .5 Dice/IoU use probabilities area-resampled to 32x32,
 then exact old target nearest-resize semantics; native resolution agreement is
 separate. Region boxes are predicted .5 connected components mapped to ROI
 coordinates with confidence from component mean probability, no GT routing.
+Independent localization reports best predicted-region box IoU per recorded
+positive max-grade annotation, its arithmetic mean and recall at IoU>=.5.
+No predicted-box precision or all-lesion recall is inferred from incomplete
+annotation. Both native and canonical-grid heatmaps are exported in final bundles.
 Raw image inputs are already dataset ultrasound ROI crops. Pixel-only ROI source
 code is separately audited; retained-image selection historically used annotation
 quality filters, which does not make the crop a lesion-box prompt.

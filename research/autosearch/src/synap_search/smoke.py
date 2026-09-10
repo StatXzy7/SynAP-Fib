@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import replace
 from pathlib import Path
 import gc
 import time
@@ -26,6 +25,12 @@ def gradient_matrix(model, batch):
     groups = {"backbone": model.base.backbone, "grading": model.base.grading_head,
               "position": model.base.position_head,
               "lesion": model.decoder if hasattr(model, "decoder") else model.base.lesion_head}
+    for name in ("position_residual", "position_gate", "lesion_residual", "lesion_gate"):
+        if hasattr(model.base,name):
+            groups[name]=getattr(model.base,name)
+    for name in ("fusion", "experts", "local_severity"):
+        if hasattr(model,name):
+            groups[name]=getattr(model,name)
     result, vectors = {}, {}
     for loss in ("grading", "position", "box_raw"):
         model.zero_grad(set_to_none=True)

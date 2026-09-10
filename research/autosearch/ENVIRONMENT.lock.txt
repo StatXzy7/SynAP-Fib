@@ -1,0 +1,13 @@
+# Measured local runtime, 2026-09-11. Full pip freeze is private under outputs/.
+# Python 3.10.20; Windows; NVIDIA RTX 5090 D; torch CUDA12.8.
+torch==2.11.0+cu128
+torchvision==0.26.0+cu128
+numpy==2.2.6
+pandas==2.3.3
+optuna==4.9.0
+PyYAML==6.0.3
+opencv-python==5.0.0.93
+scikit-learn==1.7.2
+
+# CUDA wheel index is https://download.pytorch.org/whl/cu128.
+# Editable local packages: code (sfibai-b), research/autosearch (synap-search).

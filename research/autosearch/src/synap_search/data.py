@@ -69,6 +69,23 @@ def predicted_regions(heatmap, inverse, input_size, roi_shape):
     return boxes
 
 
+def box_iou(left, right):
+    left, right = np.asarray(left), np.asarray(right)
+    intersection = np.maximum(0, np.minimum(left[2:], right[2:]) - np.maximum(left[:2], right[:2])).prod()
+    union = np.maximum(0, left[2:] - left[:2]).prod() + np.maximum(0, right[2:] - right[:2]).prod() - intersection
+    return float(intersection / union) if union > 0 else 0.
+
+
+def max_grade_box_localization(regions, annotations, roi_shape):
+    """Best predicted box IoU for each recorded max-grade box; no negative inference."""
+    if not annotations or max(a.label for a in annotations) <= 0:
+        return []
+    maximum = max(a.label for a in annotations)
+    h,w = roi_shape
+    targets = [[a.x_min*w,a.y_min*h,a.x_max*w,a.y_max*h] for a in annotations if a.label == maximum]
+    return [max((box_iou(r["box_roi_xyxy"], target) for r in regions), default=0.) for target in targets]
+
+
 class DevelopmentDataset(FormalImageDataset):
     """No full native manifest, native annotation cache, or test split accepted."""
     def __init__(self, *, root, manifest, annotations, partition, config, seed, training):

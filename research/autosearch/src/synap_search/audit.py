@@ -5,7 +5,6 @@ from collections import Counter
 from pathlib import Path
 import json
 import math
-import subprocess
 import cv2
 import numpy as np
 import pandas as pd

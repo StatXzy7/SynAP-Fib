@@ -1,7 +1,6 @@
 """Independent final evaluation. Imported only by freeze/final-test/report."""
 from __future__ import annotations
 
-from dataclasses import asdict
 from pathlib import Path
 import math
 import json
@@ -38,6 +37,11 @@ def freeze(config):
                 raise ValueError("Incomplete training or invalid checkpoint selection")
             if sha256(result["checkpoint"]) != result["checkpoint_sha256"]:
                 raise ValueError("Checkpoint changed")
+            identity = read_json(Path(result["checkpoint"]).parent / "identity.json")
+            if not identity["native"] or identity["source"] != source_fingerprint() or identity["environment"] != environment():
+                raise ValueError("Confirmation did not use frozen native training/source/environment")
+            if digest(identity) != result["identity"] or any(identity[k] != result[k] for k in ("model","train","data")):
+                raise ValueError("Confirmation result identity mismatch")
     payload = {"status": "FROZEN", "round": config["round"], "historical_test_exposure": True,
                "primary_comparison": [confirm["winner"], "A_tuned"], "results": chosen,
                "seeds": [34001, 34002, 34003], "config": config,
@@ -73,6 +77,21 @@ def verify_manifest(path):
                 raise ValueError("Frozen checkpoint hash mismatch")
     manifest["sha256"] = claimed
     return manifest
+
+
+def verify_bundle(directory, result):
+    directory = Path(directory)
+    record = read_json(directory / "COMPLETE.json")
+    if record["checkpoint_sha256"] != result["checkpoint_sha256"]:
+        raise ValueError("Test bundle checkpoint binding mismatch")
+    required = {"predictions_full.csv.gz", "metrics.json", "regions.json", "deployment.json"}
+    if not required.issubset(record["files"]):
+        raise ValueError("Incomplete test bundle receipt")
+    for file, fingerprint in record["files"].items():
+        path = (directory / file).resolve()
+        if not path.is_relative_to(directory.resolve()) or sha256(path) != fingerprint:
+            raise ValueError("Test bundle hash mismatch")
+    return record
 
 
 def test_dataset(manifest, data_config, private):
@@ -114,12 +133,7 @@ def final_test(path):
             directory = root / "final_test" / name / str(result["train"]["seed"])
             completion = directory / "COMPLETE.json"
             if completion.exists():
-                record = read_json(completion)
-                if record["checkpoint_sha256"] != result["checkpoint_sha256"]:
-                    raise ValueError("Completed test bundle changed checkpoint")
-                for file, fingerprint in record["files"].items():
-                    if sha256(directory / file) != fingerprint:
-                        raise ValueError("Completed test bundle corrupted")
+                verify_bundle(directory, result)
                 continue
             config = TrainConfig(**result["train"])
             dataset = test_dataset(manifest, DataConfig(**result["data"]), root / "final_test/private")
@@ -140,7 +154,7 @@ def final_test(path):
                     sample = dataset[iteration % len(dataset)]
                     with torch.autocast(config.device, dtype=torch.bfloat16 if config.precision == "bf16" else torch.float16, enabled=config.precision != "fp32"):
                         prediction = model(sample["image"].unsqueeze(0).to(config.device))
-                    posterior = prediction["logits"].float().softmax(1).cpu()
+                    prediction["logits"].float().softmax(1).cpu()
                     if model.has_aux:
                         prediction["position_probs"].cpu()
                         predicted_regions(prediction["lesion_attention"][0, 0].float().cpu().numpy(), sample["inverse"].numpy(), sample["image"].shape[-1], sample["roi_shape"].tolist())
@@ -214,6 +228,7 @@ def report(path=None, config=None):
                 if not (directory / "COMPLETE.json").exists():
                     complete = False
                     continue
+                verify_bundle(directory, result)
                 frames[name].append(pd.read_csv(directory / "predictions_full.csv.gz", dtype={"image_uid": str, "patient_uid": str, "center_id": str}))
                 all_metrics[name].append(read_json(directory / "metrics.json"))
         if complete:
@@ -221,6 +236,18 @@ def report(path=None, config=None):
             winner = manifest["primary_comparison"][0]
             bootstrap = paired_seed_bootstrap(frames[winner], frames["A_tuned"])
             write_json(root / "PAIRED_BOOTSTRAP.json", bootstrap)
+            def auxiliary_mean(name):
+                return {"position": {"macro_f1": float(np.mean([m["position"]["macro_f1"] for m in all_metrics[name]]))},
+                        "lesion": {"iou_at_0_5": float(np.mean([m["lesion"]["iou_at_0_5"] for m in all_metrics[name]]))}}
+            candidate_aux, reference_aux = auxiliary_mean(winner), auxiliary_mean("E_reference")
+            auxiliary_pass = feasible(candidate_aux, reference_aux)
+            acceptance = {"auxiliary_pass": auxiliary_pass, "candidate_auxiliary": candidate_aux, "reference_auxiliary": reference_aux,
+                          "position_macro_f1_delta": candidate_aux["position"]["macro_f1"]-reference_aux["position"]["macro_f1"],
+                          "weak_box_iou_delta": candidate_aux["lesion"]["iou_at_0_5"]-reference_aux["lesion"]["iou_at_0_5"],
+                          "point_estimate_improvement_with_auxiliary_pass": bootstrap["mean_delta"] < 0 and auxiliary_pass,
+                          "stronger_conditional_evidence_with_auxiliary_pass": bootstrap["ci95"][1] < 0 and all(x < 0 for x in bootstrap["paired_deltas"]) and auxiliary_pass,
+                          "external_validation": False}
+            write_json(root / "ACCEPTANCE.json", acceptance)
             lines[2] = "Test 已执行。4,107 images / 240 patients / 4 centers；comparison round: synap-autosearch-v1；全部模型在 test 前冻结。"
             ranking = sorted(all_metrics, key=lambda n: np.mean([m["r_final"] for m in all_metrics[n]]))
             lines += ["| 模型 | seed34001 | seed34002 | seed34003 | mean ± sample SD |", "|---|---:|---:|---:|---:|"]
@@ -228,6 +255,14 @@ def report(path=None, config=None):
                 values = [m["r_final"] for m in all_metrics[name]]
                 lines.append(f"| {name} | {values[0]:.6f} | {values[1]:.6f} | {values[2]:.6f} | {np.mean(values):.6f} ± {np.std(values, ddof=1):.6f} |")
             lines += ["", "主要配对比较：", "```json", json.dumps(bootstrap, ensure_ascii=False, indent=2), "```"]
+            lines += ["", "三任务验收：", "```json", json.dumps(acceptance, ensure_ascii=False, indent=2), "```"]
+            for baseline in ("A_tuned", "A_legacy"):
+                comparisons=[]
+                for name in ranking:
+                    for seed,m,b in zip(manifest["seeds"],all_metrics[name],all_metrics[baseline]):
+                        delta=m["r_final"]-b["r_final"]
+                        comparisons.append({"model":name,"seed":seed,"absolute_delta":delta,"relative_delta":delta/b["r_final"] if b["r_final"] else None})
+                lines += ["", f"相对 {baseline}：", "```json", json.dumps(comparisons,ensure_ascii=False,indent=2), "```"]
             for name, metrics in all_metrics.items():
                 lines += ["", f"## {name} 全部 test 指标", "```json", json.dumps(metrics, ensure_ascii=False, indent=2), "```"]
     lines += ["", "## 开发集结果与 checkpoint 选择", ""]
@@ -237,6 +272,23 @@ def report(path=None, config=None):
             lines.append(f"{label}: {state['status']}。详见同目录结构化记录。")
         else:
             lines.append(f"{label}: 未完成；无可报告的正式开发排名。")
+    for history_path in sorted(root.glob("controls/*/history.json")):
+        history=read_json(history_path)
+        if history:
+            last=history[-1]
+            lines.append(f"{history_path.parent.name}: 已完成 epoch {last['epoch']}，inner-val R_final={last['r_final']:.6f}；训练诊断，不是最终候选排名。")
+    for name in ("baseline","mechanism","recipe"):
+        ranking_path=root/name/"leaderboard_120.json"
+        if ranking_path.exists():
+            lines += ["",f"### {name}：120 epoch 开发结果","| 配置 | best epoch | inner-val R_final | GPU allocation hours |","|---|---:|---:|---:|"]
+            for r in read_json(ranking_path):
+                lines.append(f"| {r['model']['mechanism']} | {r['best']['epoch']} | {r['best']['metrics']['r_final']:.6f} | {r.get('training_gpu_allocation_hours',0):.3f} |")
+    if (root/"DATA_AUDIT.json").exists():
+        audit=read_json(root/"DATA_AUDIT.json")
+        lines += ["", "## 指纹与完成状态", "", f"Data audit: {audit.get('status')}; image hashes verified: {audit.get('image_hashes_verified',0)}.",
+                  f"Manifest SHA256: {audit.get('manifest_sha256','unavailable')}",f"Annotations SHA256: {audit.get('annotations_sha256','unavailable')}"]
+    if path:
+        lines += [f"Final manifest identity: {manifest['sha256']}."]
     lines += ["", "## 限制", "", "弱框指标是 weak-box agreement；真实轮廓分割与外部临床效用未独立验证。",
               "未完成的训练、确认或 test 均不构成性能提升证据。成本、环境、源代码和数据指纹保存在各 trial identity/result、ENVIRONMENT、DATA_AUDIT 与 ROUND_LOCK 文件。"]
     target = root / "FINAL_REPORT.md"

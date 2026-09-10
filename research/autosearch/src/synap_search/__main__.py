@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 import sys
+import subprocess
 import traceback
 from .config import load_config
 from .io import RoundLock, write_json
@@ -24,6 +25,28 @@ def main():
         parser.error("report requires --manifest or --config for pending status")
     config = load_config(args.config) if args.config else None
     output = Path(config["data"]["output"]) if config else Path(args.manifest).resolve().parent
+    if args.command == "run-all":
+        # Each stage is a separate process. Audit/test rows never enter search memory.
+        frozen=output / "FINAL_MANIFEST.json"
+        stages=[]
+        if not frozen.exists():
+            if not (output / "DATA_AUDIT.json").exists():
+                stages.append(["audit","--config",args.config])
+            if not (output / "ROUND_LOCK.json").exists():
+                stages.append(["smoke","--config",args.config])
+            stages += [["search","--config",args.config]+(["--resume"] if args.resume else []),
+                       ["confirm","--config",args.config],["freeze","--config",args.config]]
+        for stage in stages:
+            completed=subprocess.run([sys.executable,"-u","-m","synap_search",*stage],check=False)
+            if completed.returncode:
+                return completed.returncode
+        if not frozen.is_file():
+            raise RuntimeError("Freeze returned without a manifest")
+        for stage in ("final-test","report"):
+            completed=subprocess.run([sys.executable,"-u","-m","synap_search",stage,"--manifest",str(frozen)],check=False)
+            if completed.returncode:
+                return completed.returncode
+        return 0
     with RoundLock(output):
         try:
             if args.command == "audit":
@@ -44,22 +67,6 @@ def main():
             elif args.command == "report":
                 from .finalize import report
                 result = report(args.manifest, config)
-            else:
-                from .audit import audit
-                from .smoke import smoke
-                from .search import search, confirm
-                from .finalize import freeze, final_test, report
-                if not (output / "ROUND_LOCK.json").exists():
-                    if audit(config)["status"] != "PASS":
-                        raise RuntimeError("Audit gate blocked")
-                    smoke(config)
-                if search(config, args.resume)["status"] != "COMPLETE":
-                    raise RuntimeError("No feasible search candidates")
-                if confirm(config)["status"] != "COMPLETE":
-                    raise RuntimeError("No feasible confirmation candidate")
-                frozen = freeze(config)
-                final_test(frozen["manifest"])
-                result = report(frozen["manifest"])
             write_json(output / "LAST_COMMAND.json", {"command": args.command, "status": "RETURNED", "result": result})
             print(json.dumps(result, ensure_ascii=True, indent=2))
             return 0 if result.get("status") not in {"BLOCKED", "NO_FEASIBLE_CANDIDATE"} else 2

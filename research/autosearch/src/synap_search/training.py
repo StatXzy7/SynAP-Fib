@@ -5,6 +5,7 @@ from dataclasses import asdict
 from pathlib import Path
 import math
 import random
+import shutil
 import time
 import numpy as np
 import torch
@@ -14,8 +15,7 @@ from sfibai_b.data import EpochShuffleSampler
 from sfibai_b.prediction import PredictionCollector
 from sfibai_b.evaluation import evaluate_predictions, checkpoint_key
 from sfibai_b.storage import save_prediction_bundle
-from .config import ModelConfig, DataConfig, TrainConfig
-from .data import DevelopmentDataset, predicted_regions
+from .data import DevelopmentDataset, predicted_regions, max_grade_box_localization
 from .models import SearchModel, SearchObjective
 from .io import digest, environment, read_json, write_json, save_checkpoint, sha256, source_fingerprint
 
@@ -57,6 +57,8 @@ def infer(model, batches, config, full=False):
     collector = PredictionCollector(arm="MTL" if model.has_aux else "A", full=full, collect_attention=full and model.has_aux)
     native_collector = PredictionCollector(arm="MTL", full=False, collect_attention=False) if model.has_aux else None
     regions = []
+    box_overlaps = []
+    native_maps = []
     device = torch.device(config.device)
     for batch in batches:
         with torch.autocast(device.type, dtype=torch.bfloat16 if config.precision == "bf16" else torch.float16,
@@ -68,7 +70,11 @@ def infer(model, batches, config, full=False):
             native_collector.add_batch(batch, outputs)
             if full:
                 for i, uid in enumerate(batch["image_uid"]):
-                    regions.append({"image_uid": uid, "regions": predicted_regions(outputs["lesion_attention"][i, 0].cpu().numpy(), batch["inverse"][i].numpy(), batch["image"].shape[-1], batch["roi_shape"][i].tolist())})
+                    heatmap=outputs["lesion_attention"][i,0].float().cpu().numpy()
+                    predicted=predicted_regions(heatmap,batch["inverse"][i].numpy(),batch["image"].shape[-1],batch["roi_shape"][i].tolist())
+                    regions.append({"image_uid": uid, "regions": predicted})
+                    box_overlaps.extend(max_grade_box_localization(predicted,batches.dataset.annotations.get(uid,()),batch["roi_shape"][i].tolist()))
+                    native_maps.append(heatmap.astype(np.float16))
             # Predeclared canonical 32x32 grid at 512 input. Resample probabilities.
             outputs = dict(outputs)
             outputs["lesion_attention"] = F.interpolate(outputs["lesion_attention"].float(), size=(32, 32), mode="area")
@@ -85,7 +91,15 @@ def infer(model, batches, config, full=False):
         for true, pred in zip(frame.position_true, frame.position_pred):
             confusion[int(true) - 1, int(pred) - 1] += 1
         metrics["position"]["confusion_matrix"] = confusion.tolist()
-    return frame, metrics, collector.attention_payload(), regions
+        if full:
+            metrics["predicted_box_localization"]={"target":"recorded_max_grade_positive_boxes","n":len(box_overlaps),
+                "mean_best_box_iou":float(np.mean(box_overlaps)) if box_overlaps else None,
+                "recall_at_iou_0_5":float(np.mean(np.asarray(box_overlaps)>=.5)) if box_overlaps else None,
+                "precision":"not estimated: annotation completeness unknown"}
+    payload=collector.attention_payload()
+    if payload is not None:
+        payload["native_attention"]=np.stack(native_maps)
+    return frame, metrics, payload, regions
 
 
 def make_datasets(config, train_config, data_config, native=False):
@@ -152,7 +166,11 @@ def train_trial(config, model_config, train_config, data_config, directory, *, n
         if ema is not None:
             ema.load_state_dict(saved["ema"])
         history, completed, best, elapsed = saved["history"], saved["epoch"], saved["best"], saved["elapsed_seconds"]
+        if best is not None and sha256(directory / best["file"]) != best["file_sha256"]:
+            raise ValueError("Resume best checkpoint is missing or corrupted")
         restore_rng(saved["rng"])
+        if callback and completed in {30, 60, 120}:
+            callback(completed, best or {"metrics": history[-1]["metrics"]}, history)
     start = time.perf_counter()
     for epoch in range(completed + 1, target_epoch + 1):
         sampler.set_epoch(epoch)
@@ -173,7 +191,7 @@ def train_trial(config, model_config, train_config, data_config, directory, *, n
                 raise FloatingPointError("Nonfinite training loss")
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
-            finite = all(p.grad is None or torch.isfinite(p.grad).all() for p in model.parameters())
+            finite = bool(torch.stack([torch.isfinite(p.grad).all() for p in model.parameters() if p.grad is not None]).all())
             if not finite and train_config.precision != "fp16":
                 raise FloatingPointError("Nonfinite gradient")
             if steps == 0 and finite:
@@ -193,13 +211,17 @@ def train_trial(config, model_config, train_config, data_config, directory, *, n
                             value.copy_(current[key])
             losses += float(loss.detach())
             steps += 1
+            if steps == 1 or steps % 100 == 0:
+                write_json(directory / "status.json", {"status":"TRAINING", "epoch":epoch, "batch":steps,
+                           "batches_per_epoch":len(train_loader), "elapsed_seconds":elapsed+time.perf_counter()-start})
         frame, metrics, _, _ = infer(ema or model, val_loader, train_config)
         key = checkpoint_key(metrics, epoch)
         improved = epoch > 20 and (best is None or key < tuple(best["key"]))
+        previous_best = best
         if improved:
-            best = {"key": list(key), "metrics": metrics, "epoch": epoch}
-            save_checkpoint(directory / "best.pt", {"model": (ema or model).state_dict(), "identity": identity_hash, "epoch": epoch})
-            save_prediction_bundle(directory=directory / "best_val", frame=frame, metrics=metrics, attention=None, full=False)
+            filename = f"selected_epoch_{epoch:03d}.pt"
+            save_checkpoint(directory / filename, {"model": (ema or model).state_dict(), "identity": identity_hash, "epoch": epoch})
+            best = {"key": list(key), "metrics": metrics, "epoch": epoch, "file": filename, "file_sha256": sha256(directory / filename)}
         row = {"epoch": epoch, "train_loss": losses / steps, "r_final": metrics["r_final"],
                "metrics": metrics, "lr": optimizer.param_groups[0]["lr"], "aux_scale": objective.base.aux_scale,
                "backbone_grad_norm": grad_norm, "overflow_skipped": skipped}
@@ -208,6 +230,9 @@ def train_trial(config, model_config, train_config, data_config, directory, *, n
         save_checkpoint(directory / "last.pt", {"identity": identity_hash, "model": model.state_dict(), "optimizer": optimizer.state_dict(),
                         "scaler": scaler.state_dict(), "ema": ema.state_dict() if ema is not None else None,
                         "rng": rng_state(), "epoch": epoch, "history": history, "best": best, "elapsed_seconds": seconds})
+        if improved and previous_best is not None:
+            # Delete only the old selected file after last.pt commits the new pointer.
+            (directory / previous_best["file"]).unlink(missing_ok=True)
         write_json(directory / "history.json", history)
         write_json(directory / "status.json", {"status": "RUNNING", "epoch": epoch, "elapsed_seconds": seconds})
         print(f"{directory.name}: epoch={epoch} dev_R_final={metrics['r_final']:.6f}", flush=True)
@@ -215,9 +240,17 @@ def train_trial(config, model_config, train_config, data_config, directory, *, n
             callback(epoch, best or {"metrics": metrics}, history)
     if best is None:
         raise RuntimeError("No eligible checkpoint; not a completed trial")
+    shutil.copyfile(directory / best["file"], directory / "best.pt")
+    selected_state = torch.load(directory / "best.pt", map_location="cpu", weights_only=False)
+    model.load_state_dict(selected_state["model"])
+    frame, selected_metrics, _, _ = infer(model, val_loader, train_config)
+    save_prediction_bundle(directory=directory / "best_val", frame=frame, metrics=selected_metrics, attention=None, full=False)
     result = {"completed_epoch": target_epoch, "best": best, "identity": identity_hash,
               "checkpoint": str((directory / "best.pt").resolve()), "checkpoint_sha256": sha256(directory / "best.pt"),
               "elapsed_seconds": elapsed + time.perf_counter() - start,
+              "training_gpu_allocation_hours": (elapsed + time.perf_counter() - start) / 3600 if device.type == "cuda" else 0.,
+              "processed_images": len(train_dataset) * target_epoch,
+              "train_and_validation_images_per_second": (len(train_dataset) + len(valid_dataset)) * target_epoch / (elapsed + time.perf_counter() - start),
               "parameters": sum(p.numel() for p in model.parameters()),
               "peak_memory_bytes": torch.cuda.max_memory_allocated() if device.type == "cuda" else None,
               "model": asdict(model_config), "train": asdict(train_config), "data": asdict(data_config)}

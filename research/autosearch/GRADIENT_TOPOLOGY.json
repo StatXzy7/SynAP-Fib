@@ -1,0 +1,235 @@
+{
+  "evidence": "synthetic FP32 batch; mechanics only, no performance claim",
+  "matrices": [
+    {
+      "auxiliary_eta": 0.3,
+      "grading_auxiliary_cosine": {
+        "box_raw": null,
+        "position": null
+      },
+      "injection_eta": 0.0,
+      "mechanism": "E_reference",
+      "norms": {
+        "box_raw": {
+          "backbone": 0.0,
+          "grading": 0.0,
+          "lesion": 134.07151794433594,
+          "lesion_gate": 0.0,
+          "lesion_residual": 0.0,
+          "position": 0.0,
+          "position_gate": 0.0,
+          "position_residual": 0.0
+        },
+        "grading": {
+          "backbone": 9.878495216369629,
+          "grading": 9.362110137939453,
+          "lesion": 0.0,
+          "lesion_gate": 0.006829891819506884,
+          "lesion_residual": 0.24437959492206573,
+          "position": 0.0,
+          "position_gate": 6.414933295673109e-07,
+          "position_residual": 0.0031624832190573215
+        },
+        "position": {
+          "backbone": 0.0,
+          "grading": 0.0,
+          "lesion": 0.0,
+          "lesion_gate": 0.0,
+          "lesion_residual": 0.0,
+          "position": 515.085205078125,
+          "position_gate": 0.0,
+          "position_residual": 0.0
+        }
+      }
+    },
+    {
+      "auxiliary_eta": 0,
+      "grading_auxiliary_cosine": {
+        "box_raw": null,
+        "position": null
+      },
+      "injection_eta": 0.0,
+      "mechanism": "M1",
+      "norms": {
+        "box_raw": {
+          "backbone": 0.0,
+          "grading": 0.0,
+          "lesion": 134.07151794433594,
+          "position": 0.0
+        },
+        "grading": {
+          "backbone": 9.878463745117188,
+          "grading": 9.360969543457031,
+          "lesion": 0.0,
+          "position": 0.0
+        },
+        "position": {
+          "backbone": 0.0,
+          "grading": 0.0,
+          "lesion": 0.0,
+          "position": 515.085205078125
+        }
+      }
+    },
+    {
+      "auxiliary_eta": 0.3,
+      "grading_auxiliary_cosine": {
+        "box_raw": -0.01855361834168434,
+        "position": -0.046371445059776306
+      },
+      "injection_eta": 0.0,
+      "mechanism": "M1",
+      "norms": {
+        "box_raw": {
+          "backbone": 16.73639678955078,
+          "grading": 0.0,
+          "lesion": 134.07151794433594,
+          "position": 0.0
+        },
+        "grading": {
+          "backbone": 9.878463745117188,
+          "grading": 9.360969543457031,
+          "lesion": 0.0,
+          "position": 0.0
+        },
+        "position": {
+          "backbone": 111.79124450683594,
+          "grading": 0.0,
+          "lesion": 0.0,
+          "position": 515.085205078125
+        }
+      }
+    },
+    {
+      "auxiliary_eta": 0.3,
+      "grading_auxiliary_cosine": {
+        "box_raw": 0.006913354620337486,
+        "position": -0.046371445059776306
+      },
+      "injection_eta": 0.0,
+      "mechanism": "M2",
+      "norms": {
+        "box_raw": {
+          "backbone": 11.360505104064941,
+          "grading": 0.0,
+          "lesion": 63.582950592041016,
+          "position": 0.0
+        },
+        "grading": {
+          "backbone": 9.878463745117188,
+          "grading": 9.360969543457031,
+          "lesion": 0.0,
+          "position": 0.0
+        },
+        "position": {
+          "backbone": 111.79124450683594,
+          "grading": 0.0,
+          "lesion": 0.0,
+          "position": 515.085205078125
+        }
+      }
+    },
+    {
+      "auxiliary_eta": 0.3,
+      "grading_auxiliary_cosine": {
+        "box_raw": 0.04367681220173836,
+        "position": -0.04642345756292343
+      },
+      "injection_eta": 0,
+      "mechanism": "M3",
+      "norms": {
+        "box_raw": {
+          "backbone": 4.012883186340332,
+          "fusion": 0.0,
+          "grading": 0.0,
+          "lesion": 17.853113174438477,
+          "position": 0.0
+        },
+        "grading": {
+          "backbone": 9.878519058227539,
+          "fusion": 0.28948578238487244,
+          "grading": 9.361885070800781,
+          "lesion": 0.0,
+          "position": 0.0
+        },
+        "position": {
+          "backbone": 111.79124450683594,
+          "fusion": 0.0,
+          "grading": 0.0,
+          "lesion": 0.0,
+          "position": 515.085205078125
+        }
+      }
+    },
+    {
+      "auxiliary_eta": 0.3,
+      "grading_auxiliary_cosine": {
+        "box_raw": 0.0438351035118103,
+        "position": -0.04482395201921463
+      },
+      "injection_eta": 1,
+      "mechanism": "M3",
+      "norms": {
+        "box_raw": {
+          "backbone": 4.012883186340332,
+          "fusion": 0.0,
+          "grading": 0.0,
+          "lesion": 17.853113174438477,
+          "position": 0.0
+        },
+        "grading": {
+          "backbone": 9.859662055969238,
+          "fusion": 12.091601371765137,
+          "grading": 9.328021049499512,
+          "lesion": 0.061506323516368866,
+          "position": 2.2675773436731106e-07
+        },
+        "position": {
+          "backbone": 111.79124450683594,
+          "fusion": 0.0,
+          "grading": 0.0,
+          "lesion": 0.0,
+          "position": 515.085205078125
+        }
+      }
+    },
+    {
+      "auxiliary_eta": 0.3,
+      "grading_auxiliary_cosine": {
+        "box_raw": 0.012659864500164986,
+        "position": -0.0401042178273201
+      },
+      "injection_eta": 0.3,
+      "mechanism": "M4",
+      "norms": {
+        "box_raw": {
+          "backbone": 11.360505104064941,
+          "experts": 0.0,
+          "fusion": 0.0,
+          "grading": 0.0,
+          "lesion": 63.582950592041016,
+          "local_severity": 0.0,
+          "position": 0.0
+        },
+        "grading": {
+          "backbone": 9.973698616027832,
+          "experts": 10.587904930114746,
+          "fusion": 10.568668365478516,
+          "grading": 9.393360137939453,
+          "lesion": 0.024834761396050453,
+          "local_severity": 0.0,
+          "position": 2.568381569290068e-05
+        },
+        "position": {
+          "backbone": 111.79124450683594,
+          "experts": 0.0,
+          "fusion": 0.0,
+          "grading": 0.0,
+          "lesion": 0.0,
+          "local_severity": 0.0,
+          "position": 515.085205078125
+        }
+      }
+    }
+  ]
+}

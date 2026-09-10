@@ -1,0 +1,76 @@
+{
+  "anatomical_names": "not established; numeric codes retained",
+  "annotation_completeness": "unknown outside recorded boxes; missing is not negative",
+  "annotation_max_mismatches": 0,
+  "annotation_rows": 109882,
+  "annotation_shape_types": {
+    "rectangle": 109882
+  },
+  "annotations_sha256": "6684cb633ad055eb55f399a6383f531b5e8cf4db0a3ef828fb6967c16150d167",
+  "contour_truth": false,
+  "development_files": {
+    "images.csv": "d3a3d04b9adb947b6c3905a2d18d256f6a5ca28586970dc1910881786f48d7cb",
+    "inner_train.jsonl": "40230446c84ebac16b58040c5098c2c1ecd6862c723fe783cd895221ceee8f9f",
+    "inner_val.jsonl": "b71a7454c90d2a2f4a869edf51bc37c71b05a2b5730de71c9cefb16efd406d8e",
+    "native_train.jsonl": "531347f450bb8473274cd5bcd7875586a05ec01d69ddcd2d9aa0a7cf6d874c68",
+    "native_val.jsonl": "4e61622f2064582a29a6ce7032e32d82328365ba599688a41c7497326093bd22"
+  },
+  "development_position_counts": {
+    "train": {
+      "1": 14137,
+      "2": 14092,
+      "3": 14121,
+      "4": 14047,
+      "5": 13960,
+      "6": 13365
+    },
+    "val": {
+      "1": 3515,
+      "2": 3524,
+      "3": 3556,
+      "4": 3521,
+      "5": 3478,
+      "6": 3286
+    }
+  },
+  "duplicate_cross_split_hashes": 0,
+  "historical_test_exposure": true,
+  "image_hashes_verified": 108709,
+  "inner_counts": {
+    "inner_train": 66929,
+    "inner_val": 16793
+  },
+  "inner_train_channel_spread_mean_128": 4.397064802360536,
+  "lower_severity_boxes": 909,
+  "manifest_sha256": "73a14221ea1a67f3248351a4ed5d08574f904175e69d9129ab2e705a0bb86a40",
+  "missing_annotations": 0,
+  "patient_center_conflicts": false,
+  "patient_split_leakage": false,
+  "position_mapping": {
+    "1": 0,
+    "2": 1,
+    "3": 2,
+    "4": 3,
+    "5": 4,
+    "6": 5
+  },
+  "score_zero_images": 181,
+  "splits": {
+    "test": {
+      "centers": 4,
+      "images": 4107,
+      "patients": 240
+    },
+    "train": {
+      "centers": 35,
+      "images": 83722,
+      "patients": 4906
+    },
+    "val": {
+      "centers": 33,
+      "images": 20880,
+      "patients": 1227
+    }
+  },
+  "status": "PASS"
+}

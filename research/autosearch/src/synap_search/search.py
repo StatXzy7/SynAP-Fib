@@ -4,13 +4,27 @@ from dataclasses import asdict, replace
 from pathlib import Path
 import math
 import pickle
+import hashlib
 import time
 import numpy as np
 import optuna
 from scipy.stats import spearmanr
 from .config import ModelConfig, TrainConfig, DataConfig
-from .io import read_json, write_json, digest, sha256, source_fingerprint, environment
+from .io import read_json, write_json, write_bytes, digest, sha256, source_fingerprint, environment
 from .training import train_trial
+
+
+class DeterministicTPESampler(optuna.samplers.TPESampler):
+    """Per-parameter deterministic TPE: partial Optuna suggestions replay exactly."""
+    def __init__(self, seed=31001):
+        super().__init__(seed=seed, n_startup_trials=6)
+        self.base_seed = seed
+
+    def sample_independent(self, study, trial, param_name, param_distribution):
+        key = f"{self.base_seed}:{trial.number}:{param_name}"
+        seed = int.from_bytes(hashlib.sha256(key.encode()).digest()[:4], "little")
+        sampler = optuna.samplers.TPESampler(seed=seed, n_startup_trials=6)
+        return sampler.sample_independent(study, trial, param_name, param_distribution)
 
 
 def feasible(metrics, reference):
@@ -42,6 +56,16 @@ def gate(config):
     smoke = read_json(output / "SMOKE.json")
     if smoke.get("status") != "PASS" or smoke.get("source") != source_fingerprint():
         raise RuntimeError("Current code must pass smoke")
+    if smoke.get("environment") != environment():
+        raise RuntimeError("Smoke environment changed")
+    if config["train"]["device"] == "cuda":
+        real = smoke.get("gpu_real_batch")
+        if not real or real["real_inner_train_images"] != config["train"]["batch_size"]:
+            raise RuntimeError("Configured real CUDA batch has not passed smoke")
+        if config["train"]["precision"] == "bf16" and not real.get("bf16_finite_loss_and_gradients"):
+            raise RuntimeError("BF16 validation did not pass")
+        if config["train"]["precision"] == "fp16":
+            raise RuntimeError("FP16 search is not validated by current smoke")
     identity = {"config": config, "source": source_fingerprint(), "environment": environment(), "audit": digest(audit)}
     lock = output / "ROUND_LOCK.json"
     if lock.exists() and read_json(lock) != identity:
@@ -86,6 +110,18 @@ def pruning_allowed(model, epoch, protected):
     return not protected and model.mechanism != "G_slow" and epoch in {30, 60} and epoch >= model.warmup + 10
 
 
+def halving_decision(path, value, peers):
+    """Persist the peer snapshot and decision together before changing trial state."""
+    path = Path(path)
+    if path.exists():
+        return read_json(path)["prune"]
+    values = sorted([float(v) for v in peers] + [float(value)])
+    cutoff = values[max(0, math.ceil(len(values) / 2) - 1)]
+    prune = value > cutoff
+    write_json(path, {"peers": list(peers), "value": value, "cutoff": cutoff, "prune": prune})
+    return prune
+
+
 def calibration_reliability(output):
     histories = []
     for path in sorted((output / "mechanism").glob("trial_*/result.json")):
@@ -108,7 +144,7 @@ def run_study(config, output, name, budget, reference, resume, structure=None):
     root = output / name
     root.mkdir(exist_ok=True)
     sampler_path = root / "sampler.pkl"
-    sampler = pickle.loads(sampler_path.read_bytes()) if sampler_path.exists() else optuna.samplers.TPESampler(seed=31001, n_startup_trials=6)
+    sampler = pickle.loads(sampler_path.read_bytes()) if sampler_path.exists() else DeterministicTPESampler()
     study = optuna.create_study(study_name=name, storage="sqlite:///" + (root / "study.sqlite3").as_posix(),
                                direction="minimize", load_if_exists=resume, sampler=sampler,
                                pruner=optuna.pruners.SuccessiveHalvingPruner(min_resource=30, reduction_factor=2))
@@ -129,18 +165,22 @@ def run_study(config, output, name, budget, reference, resume, structure=None):
         if proposal.exists():
             saved = read_json(proposal)
             model, train, data = ModelConfig(**saved["model"]), TrainConfig(**saved["train"]), DataConfig(**saved["data"])
+            study.sampler = pickle.loads(bytes.fromhex(saved["sampler_state"]))
         else:
             model = suggest_model(trial) if name == "mechanism" else structure or ModelConfig(mechanism="A_tuned")
             if name != "mechanism":
                 model, train, data = suggest_recipe(trial, train, data, model)
-            write_json(proposal, {"model": asdict(model), "train": asdict(train), "data": asdict(data)})
-            sampler_path.write_bytes(pickle.dumps(study.sampler))
+            write_json(proposal, {"model": asdict(model), "train": asdict(train), "data": asdict(data),
+                                 "sampler_state": pickle.dumps(study.sampler).hex()})
+            write_bytes(sampler_path, pickle.dumps(study.sampler))
         protected = name != "mechanism" or trial.number < 6 or not calibration_reliability(output)
         def callback(epoch, best, history):
             if epoch in {30, 60, 120}:
                 trial.report(best["metrics"]["r_final"], epoch)
-                if pruning_allowed(model, epoch, protected) and trial.should_prune():
-                    raise optuna.TrialPruned()
+                if pruning_allowed(model, epoch, protected):
+                    peers = [t.intermediate_values[epoch] for t in study.trials if t.number != trial.number and epoch in t.intermediate_values]
+                    if halving_decision(directory / f"rung_{epoch}.json", best["metrics"]["r_final"], peers):
+                        raise optuna.TrialPruned()
         started = time.perf_counter()
         try:
             result = train_trial(config, model, train, data, directory, resume=resume, callback=callback)
@@ -157,8 +197,12 @@ def run_study(config, output, name, budget, reference, resume, structure=None):
             study.tell(trial, state=optuna.trial.TrialState.FAIL)
             if not isinstance(exc, (FloatingPointError, torch_cuda_oom())):
                 raise
+        except Exception as exc:
+            write_json(directory / "interruption.json", {"type":type(exc).__name__, "error":str(exc),
+                       "status":"INFRASTRUCTURE_INTERRUPTION", "attempt_seconds":time.perf_counter()-started})
+            raise
         finally:
-            sampler_path.write_bytes(pickle.dumps(study.sampler))
+            write_bytes(sampler_path, pickle.dumps(study.sampler))
             write_json(root / "trial_registry.json", [{"number": t.number, "state": t.state.name, "params": t.params, "attributes": t.user_attrs, "value": t.value} for t in study.trials])
     valid = [read_json(t.user_attrs["result"]) for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE and t.user_attrs.get("feasible")]
     valid.sort(key=lambda r: r["best"]["key"])
