@@ -6,7 +6,9 @@
 *.fls
 *.log
 *.out
-*.pdf
+/main.pdf
+/main_iclr.pdf
+/supplementary.pdf
 *.synctex.gz
 *.toc
 *.zip

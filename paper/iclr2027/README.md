@@ -12,8 +12,9 @@
 ## 目录结构
 
 - `main.tex`：当前 ICLR 稿件入口。
+- `main_iclr.tex`：兼容性的 ICLR 入口；日常编辑以 `main.tex` 为准。
 - `supplementary.tex`：补充材料入口。
-- `sections/`、`tables/`、`figures/`：论文正文、表格和不含临床图像的图形源文件。
+- `sections/`、`tables/`、`figures/`：论文正文、表格、图形源文件和主稿实际引用的 PDF 图像。
 - `FACTS.md`、`DECISIONS.md`、`ICLR_REWRITE_PLAN.md`：事实边界、决策记录和投稿计划。
 - `P1_*`、`P2_*`、`P3_*`、`GATE*_*.md`、`SELF_AUDIT.md`：审计与生产记录。
 - `scripts/`：引用、元数据和图表辅助脚本。
@@ -26,3 +27,7 @@
 4. 推送到 `SFibAI-B` 的 `main`，其他机器用 `git pull` 同步。
 
 当前 ICLR 官方样式文件已作为源文件保留；如果会议发布新版本，应在此目录单独更新并记录版本来源。
+
+## 与其他论文目录的关系
+
+`paper/iclr2027/main.tex` 是当前新的 ICLR 版本；`paper/en/main.tex` 是原先的英文论文目录，保留作既有版本和共享资源来源，不是 ICLR 主稿入口。
