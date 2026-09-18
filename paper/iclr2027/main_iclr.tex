@@ -1,0 +1,38 @@
+\documentclass{article}
+\usepackage{iclr2027_conference,times}
+\usepackage{amsmath,amssymb,booktabs,graphicx,multirow,url}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\newcommand{\method}{\textsc{SynAP-Fib}}
+\title{Learning Anatomical Concepts for Interpretable Fine-Grained Ultrasound Grading: A Study in Schistosomiasis-Associated Liver Fibrosis}
+\author{Ziyang Xu \and et al.}
+\begin{document}
+\maketitle
+\begin{abstract}
+Medical images often contain structured information that is available during training but unreliable at deployment. We study whether such information can be represented as explicit, anatomically grounded concepts and used as an interpretable pathway for fine-grained prediction. We introduce \method, a ResNet-50 model for schistosomiasis-associated liver-fibrosis grading that predicts two intermediate concepts—a six-position anatomical posterior and a weak-box lesion map—and injects their predicted representations into the grading pathway through gated residuals with a bidirectionally detached gradient boundary. The model therefore uses image-derived concepts at inference and requires no position metadata or lesion boxes. On a patient-held-out test set of 4,107 images from 240 patients, a prespecified comparison of five configurations shows that either concept pathway alone degrades the composite clinical risk, while the joint pathway attains the best observed risk and retains baseline-level grading performance. The joint model additionally produces position and weak-box localization outputs with a 5.9\% parameter and 2.8\% arithmetic overhead. Because the study uses one disease, one backbone, and one seed, we interpret the results as evidence for a task-specific, anatomically grounded concept pathway rather than as a universal explanation mechanism. The experiments establish a concrete platform for future concept interventions; they do not by themselves establish causal or faithful explanations.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+\input{sections/01_introduction}
+\section{Related Work}
+\input{sections/02_related_work}
+\section{Method}
+\label{sec:methods}
+\input{sections/03_methods}
+\section{Experiments}
+\label{sec:results}
+\input{sections/04_results}
+\section{Discussion}
+\label{sec:discussion}
+\input{sections/05_discussion}
+
+\section{Limitations and Broader Impact}
+The study concerns schistosomiasis-associated fibrosis and a patient-held-out split whose four test centers are also represented in training. It therefore does not establish unseen-center generalization or applicability to other etiologies. The weak-box target is not pixel-level lesion ground truth. The model has been evaluated with one ResNet-50 backbone and one seed. These boundaries are part of the intended interpretation. The system is designed to expose additional image-derived signals to a clinician; it should not be used as an autonomous diagnostic device without prospective validation and appropriate clinical oversight.
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}
+
+

@@ -1,0 +1,16 @@
+\subsection{Main interpretation}
+We study anatomical concepts as explicit interfaces between image features and fine-grained grading. The position posterior and lesion map are more inspectable than an undifferentiated latent feature, and their predictions are available at deployment without privileged metadata. The controlled comparison shows that their joint use has a different empirical behavior from either pathway alone: single concepts degrade the primary risk, whereas the joint configuration recovers baseline-level performance and is best observed.
+
+The result should be read as a property of this task and protocol. The lesion and position signals may complement one another because position provides an acquisition frame and lesion evidence provides a spatial cue, but the present comparison does not isolate whether the pattern arises from concept use, auxiliary regularization, capacity, or their combination. The bidirectional gradient boundary makes the interface explicit, yet it does not by itself prove that the final prediction is faithful to the concepts.
+
+\subsection{Interpretability claim and next test}
+The model is best described as an anatomically grounded, non-bottleneck concept pathway. It is ``intervention-ready'' because the predicted concept representations enter through an explicit interface. A stronger interpretability claim would require replacing predicted concepts with ground-truth, corrupted, shuffled, or clinician-corrected concepts and measuring the resulting change in grading. Such an experiment would test sufficiency, necessity, and correction utility directly. We do not label the current attention maps as explanations merely because they are visually plausible.
+
+\subsection{Why a single ResNet-50 is useful here}
+Using one ResNet-50 backbone keeps the comparison controlled and makes the concept pathway the variable of interest. It is sufficient for a proof of concept in this ultrasound task. It does not support a claim that the interface is architecture-independent. Multi-seed and cross-backbone studies are natural follow-ups, but they are not silently inferred from the present result.
+
+\subsection{Clinical meaning and limitations}
+The additional position and weak-lesion outputs may help a reader check acquisition protocol adherence and inspect image regions associated with the score. This is a potential workflow benefit, not a clinical utility study. The cohort is restricted to schistosomiasis-associated fibrosis, the test centers are represented in training, and labels are expert ultrasound assessments rather than histopathology. The weak boxes are coarse and do not define a segmentation reference. The formal comparison uses one seed and one backbone, and the small E--A difference is not a demonstrated improvement.
+
+\subsection{Conclusion}
+SynAP-Fib provides a controlled example of converting training-time anatomical supervision into image-derived concepts that a fine-grained grading model can consume and expose. Its current evidence supports a task-specific concept pathway with best-observed joint performance and modest overhead. It does not yet establish faithful explanations, causal concept use, or transfer beyond the studied disease and backbone. Direct concept interventions are the next decisive experiment.

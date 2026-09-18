@@ -1,0 +1,18 @@
+\subsection{Test set primary result}
+The patient-held-out test set contains 4,107 images from 240 patients across four observed centers. All values below use validation-selected checkpoints under seed 2026. The observed ordering by the prespecified $R_{final}$ endpoint is E (0.186865), A (0.187312), D (0.196686), B (0.198100), and C (0.200202). E is therefore the best observed configuration, while its primary endpoint is not statistically distinguishable from A under paired bootstrap analysis.
+
+Table~\ref{tab:main} reports the complete test comparison. E has the lowest observed image COR (0.177908), image MAE (0.377857), patient-max COR (0.200528), and patient-max MAE (0.420558). Other metrics have different optima: B has the highest four-class accuracy (67.40\%) and C the highest $\pm0.5$ accuracy (70.17\%). We retain the prespecified composite endpoint as the ranking criterion rather than selecting a metric after observing the table.
+
+\subsection{Single versus joint anatomical concepts}
+Among stretch-resize models, adding the position concept alone increases $R_{final}$ from 0.187312 (A) to 0.200202 (C), and adding the lesion concept alone increases it to 0.196686 (D). The joint model E does not inherit either degradation and obtains 0.186865. The same pattern appears in image-level and patient-max COR. This is evidence for a configuration-dependent empirical pattern, not a formal interaction effect and not evidence that either concept is universally beneficial.
+
+\subsection{Concept quality and cost}
+The joint model predicts position with 66.81\% accuracy, macro-F1 0.6659, and cross-entropy 0.9165. Its lesion map reaches Dice@0.5 0.3603 and IoU@0.5 0.2355 over 4,035 valid weak boxes. These scores establish that the model emits semantically supervised intermediate outputs; the weak-box scores are not segmentation accuracy.
+
+Relative to A, E adds 1,442,673 parameters (5.9\%), 2.8\% more multiply--accumulate operations, and increases median single-image latency from 3.031 to 3.993 ms. Thus the additional concepts are available at a measured, modest computational cost.
+
+\subsection{Stage-wise and qualitative behavior}
+The stage-wise analysis identifies F2 as the largest-MAE stage for both A and E, while F1 has the lowest recall. E has lower MAE than A at F0, F1, and F3, and slightly higher MAE at F2. The qualitative figure shows the position posterior and weak-box agreement alongside the grading output. These examples illustrate what the model exposes to a user; they are not intervention evidence.
+
+\subsection{What the current experiments establish}
+The experiments establish three facts: the two concepts can be predicted from the image, they can be consumed by the grading pathway without metadata at inference, and their joint configuration is the best observed among the tested configurations. They do not establish that correcting a concept will correct a grading error, that the concepts are necessary for each prediction, or that the pathway transfers to other diseases or backbones. Those questions require direct concept interventions and broader replication.

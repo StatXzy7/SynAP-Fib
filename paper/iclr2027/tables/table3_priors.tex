@@ -1,0 +1,26 @@
+% Table III -- 2x2 comparison of position and lesion priors.
+% All values from FACTS.md: F-RFINAL-*, F-IMG-*, F-PMAX-*.
+% HARD CONSTRAINT (DECISIONS.md sections 3.1, 4.1): no "delta vs A" column,
+% no additive expectation, no interaction contrast.
+\begin{table}[!t]
+\centering
+\caption{Position and lesion anatomical priors under a $2\times2$ comparison,
+on the patient-held-out test set (seed 2026, single seed,
+validation-selected checkpoints). Lower is better for all three metrics; best
+value per column in bold.}
+\label{tab:priors}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}ccc rrr@{}}
+\toprule
+ & \multicolumn{2}{c}{Anatomical prior} & \multicolumn{3}{c}{Test performance} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-6}
+Config & Pos. & Les. & $R_{\mathrm{final}}\downarrow$ & Img.\ COR~$\downarrow$ & Pmax COR~$\downarrow$ \\
+\midrule
+A & --           & --           & 0.187312 & 0.178900 & 0.200569 \\
+C & \checkmark   & --           & 0.200202 & 0.181910 & 0.213942 \\
+D & --           & \checkmark   & 0.196686 & 0.186336 & 0.211353 \\
+E & \checkmark   & \checkmark   & \textbf{0.186865} & \textbf{0.177908} & \textbf{0.200528} \\
+\bottomrule
+\end{tabular}
+\end{table}

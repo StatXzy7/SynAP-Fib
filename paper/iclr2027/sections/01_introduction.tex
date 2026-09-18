@@ -1,0 +1,15 @@
+This ICLR version reframes SynAP-Fib around an explicit machine-learning question: whether training-time anatomical supervision can be converted into image-derived concepts that are readable and usable by a fine-grained grading model. The paper uses a single disease as a controlled testbed. The contribution is therefore a task-specific concept pathway, not a claim about all liver diseases.
+
+Ultrasound grading in this cohort is anatomically structured. Each image is acquired under one of six standardized positions and may carry a coarse box around fibrotic regions. These labels are available during training but may be missing or unreliable in routine deployment. The central design question is whether the model can infer the concepts itself and use them without receiving privileged metadata.
+
+We formulate the intermediate outputs as concepts rather than as hidden attention maps. The position concept is a six-way posterior; the lesion concept is a spatial map supervised by weak boxes. Their predicted representations enter the grading pathway through gated residual injections. The gradient boundary is bidirectionally detached, which separates concept learning from gradient-based regularization of the grading pathway. The model can therefore be inspected and, in a future intervention experiment, can receive edited concept values.
+
+We study this question on a large multicenter cohort of 108,709 region-of-interest images from 6,373 patients. The comparison is deliberately controlled: all configurations use the same ResNet-50 backbone, preprocessing, training schedule, and single seed. The patient-held-out test set is used only after validation-based checkpoint selection.
+
+Our contributions are:
+\begin{itemize}
+\item We define an anatomically grounded concept pathway for fine-grained ultrasound grading that uses predicted position and weak-lesion concepts at inference without requiring anatomical metadata.
+\item We give a controlled $2\times2$ comparison of the two concept pathways. Single concepts degrade grading risk, whereas their joint use recovers baseline-level performance and obtains the best observed composite risk.
+\item We expose two human-readable outputs at a small computational cost and separate concept outputs from grading gradients, making the model suitable for concept-quality and intervention analyses.
+\item We state the interpretability boundary explicitly: the present experiments show semantically supervised intermediate variables and pathway sensitivity, but do not claim causal faithfulness without direct concept interventions.
+\end{itemize}

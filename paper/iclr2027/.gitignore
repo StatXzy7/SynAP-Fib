@@ -1,0 +1,28 @@
+# Generated LaTeX/build outputs
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.pdf
+*.synctex.gz
+*.toc
+*.zip
+page_check/
+render/
+
+# Private or potentially identifying research material
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.tif
+*.tiff
+*.webp
+checkpoints/
+runs/
+outputs/
+artifacts/
+data/

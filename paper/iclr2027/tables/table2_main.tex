@@ -1,0 +1,32 @@
+% Table II -- main grading performance, all five configurations.
+% All values from FACTS.md: F-RFINAL-*, F-IMG-*, F-PMAX-*.
+% NOTE: no "delta vs A" column is permitted (DECISIONS.md section 3.1).
+\begin{table*}[!t]
+\centering
+\caption{Grading performance on the patient-held-out test set (4,107 images,
+240 patients, 4 centers; seed 2026, single seed). All values use the
+validation-selected checkpoint of each configuration. Configuration A is the
+SFibAI baseline and E is SynAP-Fib. Lower is better for $R_{\mathrm{final}}$,
+COR and MAE; higher is better for the accuracy columns. Best value per column
+in bold.}
+\label{tab:main}
+\small
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{@{}clrrrrrrr@{}}
+\toprule
+ & & \multicolumn{5}{c}{Image level} & \multicolumn{2}{c}{Patient-max} \\
+\cmidrule(lr){3-7} \cmidrule(lr){8-9}
+Arm & Configuration & $R_{\mathrm{final}}\downarrow$ & COR~$\downarrow$ & MAE~$\downarrow$ & $\pm0.5$ acc.~$\uparrow$ & 4-class acc.~$\uparrow$ & COR~$\downarrow$ & MAE~$\downarrow$ \\
+\midrule
+A & Stretch baseline (SFibAI) & 0.187312 & 0.178900 & 0.379086 & 69.81\% & 66.76\% & 0.200569 & 0.430000 \\
+B & Letterbox baseline & 0.198100 & 0.179921 & 0.382443 & 69.69\% & \textbf{67.40\%} & 0.216948 & 0.450034 \\
+C & Stretch + position & 0.200202 & 0.181910 & 0.381920 & \textbf{70.17\%} & 65.89\% & 0.213942 & 0.438725 \\
+D & Stretch + lesion & 0.196686 & 0.186336 & 0.392331 & 68.86\% & 64.23\% & 0.211353 & 0.451029 \\
+E & SynAP-Fib & \textbf{0.186865} & \textbf{0.177908} & \textbf{0.377857} & 70.15\% & 67.03\% & \textbf{0.200528} & \textbf{0.420558} \\
+\bottomrule
+\end{tabular}
+}
+\end{table*}
+
+
+

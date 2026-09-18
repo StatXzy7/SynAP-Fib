@@ -1,0 +1,33 @@
+\subsection{Task and cohort}
+We use 108,709 region-of-interest B-mode ultrasound images from 6,373 patients across 35 centers. The cohort concerns \emph{Schistosoma japonicum}-associated liver fibrosis. Each patient is scanned under a standardized six-position protocol; images carry a normalized position label, a fine-grained fibrosis score on 36 levels from 0.0 to 3.5, and, when available, a coarse fibrosis-region box. The conventional four clinical grades use boundaries 0.5, 1.5, and 2.5.
+
+The patient-level split contains 83,722 training images from 4,906 patients, 20,880 validation images from 1,227 patients, and 4,107 test images from 240 patients. Patients do not overlap across splits. The four test centers also occur in training, so the test set evaluates new patients within observed centers, not unseen-center generalization. The test cohort contains 60 patients per clinical grade; aggregate results are therefore not prevalence-weighted population estimates.
+
+\subsection{Concept-pathway model}
+The shared encoder is a ResNet-50 initialized from ImageNet weights. Its ordinal grading head produces a posterior $p_0,\ldots,p_{35}$ and the continuous score
+\begin{equation}
+\hat y=\sum_{k=0}^{35}p_k k/10.
+\end{equation}
+
+The position concept $z_{pos}$ is a six-class posterior trained from normalized acquisition position. The lesion concept $z_{les}$ is a spatial attention map trained against the union of available weak boxes. At inference neither ground-truth position nor boxes are supplied; the grading pathway receives only the predicted concepts.
+
+For each concept $z_j$, a projection $\phi_j(z_j)$ is added to the grading representation as a gated residual:
+\begin{equation}
+h_{grade}'=h_{grade}+g_j\,\phi_j(z_j), \qquad 0\leq g_j\leq0.5.
+\end{equation}
+The joint model sums the two residuals. The gate is initialized with residual scale 0.001 and all gate settings are fixed across configurations. Gradients from the grading loss do not flow into the concept branch through the residual, and concept losses do not flow into the grading pathway through the residual. This creates an explicit semantic interface, but it does not make the model a strict bottleneck because the shared grading representation remains available.
+
+\subsection{Configurations and training}
+We compare five configurations: A, stretch-resize baseline; B, letterbox-resize baseline; C, stretch plus position concept; D, stretch plus lesion concept; and E, stretch plus both concepts (SynAP-Fib). All configurations use the same augmentation, initialization, optimizer, 120-epoch schedule, and seed 2026. Checkpoints are selected only on validation $R_{final}$, with epochs 1--20 excluded from selection. The test set is reserved for the frozen comparison.
+
+The grading loss is the inherited hybrid ordinal loss; position and lesion losses have outer weights 0.1. Images are resized to $512\times512$. Rotation by a multiple of $90^\circ$ and saturation jitter are used for training; horizontal flips and crops are not used because they disturb the acquisition geometry.
+
+\subsection{Evaluation}
+The primary endpoint is
+\begin{equation}
+R_{final}=0.4R_{image}+0.4R_{patient\text{-}max}+0.2R_{center\text{-}balanced},
+\end{equation}
+where each component uses the prespecified clinical objective risk combining continuous score error and grade distance. Lower is better. We also report MAE, tolerance accuracies, four-grade accuracy, patient-median and patient-max metrics, calibration, and severe-error rate. Position accuracy and macro-F1 quantify the categorical concept; lesion Dice and IoU quantify agreement with weak boxes, not segmentation ground-truth performance.
+
+\subsection{Interpretability boundary}
+The architecture exposes two semantically named variables and allows them to be replaced at the interface. The present study evaluates concept prediction quality and the effect of adding concept pathways. It does not report a completed ground-truth concept replacement, randomization, or counterfactual intervention experiment. We therefore use ``concept-based'' and ``intervention-ready'' rather than claiming faithful or causal explanations.
